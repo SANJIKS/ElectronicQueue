@@ -6,6 +6,8 @@ User = get_user_model()
 
 class Queue(models.Model):
     name = models.CharField(max_length=100)
+    window_number = models.PositiveSmallIntegerField()
+    average_waiting_time = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.name
@@ -24,7 +26,7 @@ class Customer(models.Model):
     served_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Customer {self.name} - Queue: {self.queue}"
+        return f"Customer {self.user.username} - Queue: {self.queue}"
     
     class Meta:
         verbose_name = 'Талон'
