@@ -1,6 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta, time
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.utils import timezone
+
 from .models import Queue, Customer
 from .serializers import QueueSerializer, CustomerSerializer
 
@@ -9,13 +13,11 @@ class QueueViewSet(viewsets.ModelViewSet):
     serializer_class = QueueSerializer
 
     def get_permissions(self):
-        # Проверяем права доступа только для создания очереди
         if self.action == 'create' and not self.request.user.is_superuser:
             return [permissions.IsAdminUser()]
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        # Создаем очередь с помощью сериализатора
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -27,7 +29,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
 
     def get_permissions(self):
-        # Проверяем права доступа только для создания пользователя в очереди
         if self.action == 'create':
             return [permissions.IsAuthenticated()]
         return super().get_permissions()
@@ -36,34 +37,72 @@ class CustomerViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
+    
 
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
+    @action(detail=True, methods=['post'])
+    def mark_as_served(self, request, pk=None):
+        customer = self.get_object()
+        customer.is_served = True
+        customer.served_at = timezone.now()  
+        customer.save()
 
-    #     # Получаем переданный queue_id из сериализатора
-    #     queue_id = serializer.validated_data.get('queue_id')
+        queue = customer.queue
+        served_customers = Customer.objects.filter(queue=queue, is_served=True)
+        total_served_customers = served_customers.count()
+        total_waiting_time = sum((customer.served_at - customer.created_at).seconds // 60 for customer in served_customers)
+        average_waiting_time = total_waiting_time // total_served_customers if total_served_customers > 0 else 0
+
+        queue.average_waiting_time = average_waiting_time
+        queue.save()
+
+        return Response({'message': 'Талон обслужен и среднее время обновлено'})
+    
+
+
+
+class PrintTicket(viewsets.ViewSet):
+    def retrieve(self, request, pk=None):
+        current_time = datetime.now().time()
+        start_time = time(9, 0) 
+        end_time = time(23, 59)  
+
+        if not (start_time <= current_time <= end_time):
+            return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)
         
-    #     # Проверяем, существует ли очередь с указанным queue_id
-    #     if not Queue.objects.filter(id=queue_id).exists():
-    #         return Response({"error": "Такой очереди не существует."}, status=status.HTTP_400_BAD_REQUEST)
 
-    #     # Вычисляем ticket_number для нового пользователя
-    #     ticket_number = Customer.objects.filter(queue_id=queue_id).count() + 1
+        try:
+            customer = Customer.objects.get(ticket_number=pk)
+        except Customer.DoesNotExist:
+            return Response({'error': 'Талон с указанным номером не найден'}, status=404)
+        
 
-    #     if not request.user.is_authenticated:
-    #         return Response({"error": "Вы должны быть зарегистрированы."}, status=status.HTTP_401_UNAUTHORIZED)
+        def calculate_estimated_wait_time(queue, customer):
+            ahead_customers = Customer.objects.filter(queue=queue, is_served=False, ticket_number__lt=customer.ticket_number)
+            average_waiting_time = queue.average_waiting_time or 0
 
-    #     # Создаем нового пользователя в очереди
-    #     customer = Customer.objects.create(queue_id=queue_id, ticket_number=ticket_number)
-    #     serializer = self.serializer_class(customer)
-    #     return Response(serializer.data)
+            total_waiting_time = ahead_customers.count() * average_waiting_time
+            estimated_wait_time = datetime.now() + timedelta(minutes=total_waiting_time)
+            time_remaining = estimated_wait_time - datetime.now()
 
-    # def update(self, request, *args, **kwargs):
-    #     # Обновляем статус обслуживания пользователя
-    #     instance = self.get_object()
-    #     instance.is_served = True
-    #     instance.served_at = datetime.now()
-    #     instance.save()
-    #     serializer = self.get_serializer(instance)
-    #     return Response(serializer.data)
+            minutes = time_remaining.seconds // 60
+            seconds = time_remaining.seconds % 60
+
+            time_remaining_str = f"{minutes} минут, {seconds} секунд"
+
+            return time_remaining_str
+
+
+        
+        ticket_data = {
+            'Номер талона': customer.ticket_number,
+            'Выдано': customer.created_at,
+            'Имя посетителя': customer.user.username,
+            'Наименование организации': 'RSK',
+            'Очередь': customer.queue.name,
+            'Номер окна': customer.queue.window_number,
+            'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=False, ticket_number__lt=customer.ticket_number).count(),
+            'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer),
+            }
+        return Response(ticket_data)
+
+
