@@ -69,7 +69,7 @@ class PrintTicket(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         current_time = datetime.now().time()  # Текущее времени
         start_time = time(9, 0)  # Задание начала рабочего дня
-        end_time = time(23, 59)  # Задание конца рабочего дня
+        end_time = time(22, 59)  # Задание конца рабочего дня
 
         if not (start_time <= current_time <= end_time):  # Проверка на рабочее время
             return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)  # Возврат ошибки 403

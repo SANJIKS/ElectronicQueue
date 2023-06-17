@@ -26,6 +26,7 @@ INSTALLED_APPS = [
 
     'allauth',
     'allauth.account',
+    'drf_api_logger',
 
     'rest_framework',
     'drf_yasg',
@@ -184,6 +185,7 @@ LOGIN_REDIRECT_URL = '/'
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'username'
 
+DRF_API_LOGGER_DATABASE = True
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {

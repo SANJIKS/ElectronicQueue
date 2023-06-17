@@ -1,12 +1,13 @@
 from django.db import models
 
+
 class Branch(models.Model):
-    number = models.PositiveSmallIntegerField()  # Поле для хранения номера филиала
+    name = models.CharField(max_length=200) #поле для хранения названия филиала
     address = models.CharField(max_length=200)  # Поле для хранения адреса филиала
     phone = models.CharField(max_length=20)  # Поле для хранения телефона филиала
 
     def __str__(self):
-        return f"Филиал {self.number}"
+        return f"Филиал {self.name}"
     
     class Meta:
         verbose_name = 'Филиал' 
