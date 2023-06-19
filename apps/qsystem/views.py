@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, time
-
+from django.urls import reverse
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
+from decouple import config
 
 from .models import Queue, Customer
 from .serializers import QueueSerializer, CustomerSerializer
@@ -31,7 +32,22 @@ class CustomerViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create': 
             return [permissions.IsAuthenticated()]  
-        return super().get_permissions()  
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        # Получение ID созданного объекта Customer
+        customer_id = serializer.instance.id
+
+        # Формирование URL для перенаправления
+        redirect_url = config("BASE_URL")+reverse('printing-detail', args=[customer_id])  # 'printing-detail' - имя URL-маршрута, customer_id - аргумент
+
+        headers = self.get_success_headers(serializer.data)
+        return Response({'customer_id': customer_id, 'redirect_url': redirect_url}, status=201, headers=headers)
+
 
     def get_serializer_context(self):
         context = super().get_serializer_context() 
