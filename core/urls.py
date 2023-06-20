@@ -23,11 +23,12 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.jwt')),
+    path('user/', include('djoser.urls')),
+    path('login/', include('djoser.urls.jwt')),
+    path('user/', include('apps.users.urls')),
     path('', schema_view.with_ui('swagger',
          cache_timeout=0), name='schema-swagger-ui'),
-    path('queue/', include('apps.qsystem.urls')),
+    path('customers/', include('apps.qsystem.urls')),
 ]
 
 if settings.DEBUG:
