@@ -2,6 +2,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from decouple import config
+from celery.schedules import crontab
+
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,18 +25,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
 
     'allauth',
     'allauth.account',
+    'drf_api_logger',
 
     'rest_framework',
     'drf_yasg',
     'django_filters',
     'djoser',
     'corsheaders',
+    'celery',
+    'django_celery_beat',
+    'location_field.apps.DefaultConfig',
 
     #my apps
     'apps.qsystem',
+    'apps.branches',
+    'apps.users',
     
 ]
 
@@ -73,7 +82,6 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
-
 
 # Database
 
@@ -129,6 +137,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# AUTH_USER_MODEL = 'apps.users.CustomUser'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -183,6 +192,7 @@ LOGIN_REDIRECT_URL = '/'
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'username'
 
+DRF_API_LOGGER_DATABASE = True
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -222,3 +232,5 @@ LOGGING = {
         },
     },
 }
+
+
