@@ -2,8 +2,12 @@ version: '3'
 services:
   db:
     image: postgres
+    environment:
+      DB_USER: Nurik
+      DB_PASSWORD: 1
+      DB_DB: queue_db
     volumes:
-      - ./new_data:/var/lib/postgresql/data
+      - ./database_data:/var/lib/postgresql/data
   web:
     build:
       context: .
