@@ -1,7 +1,15 @@
-import re
+from datetime import datetime, timedelta
+from pytz import timezone
+
 from rest_framework import serializers
+from django.db import models
 from django.db.models import Max
+from django.contrib.auth import get_user_model
+
 from .models import Queue, Customer
+
+
+User = get_user_model()
 
 class QueueSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,12 +17,68 @@ class QueueSerializer(serializers.ModelSerializer):
         fields = '__all__'  
         read_only_fields = ('average_waiting_time',)  
 
+
+class CustomerListSerializer(serializers.ListSerializer):
+    def get_in_queue_time(self, instance):
+        created_at = instance.created_at
+        current_time = datetime.now(timezone('Asia/Bishkek')).astimezone(timezone('Asia/Bishkek'))
+
+        if isinstance(created_at, str):
+            created_at = datetime.fromisoformat(created_at).astimezone(timezone('Asia/Bishkek'))
+
+        time_diff = current_time - created_at
+
+        total_minutes = int(time_diff.total_seconds() // 60)
+        return total_minutes
+    
+
+    def to_representation(self, data):
+        iterable = data.all() if isinstance(data, models.Manager) else data
+        return [{
+            'id': item.pk,
+            'ticket_number': item.ticket_number,
+            'queue': item.queue.name,
+            'waiting_time': self.get_in_queue_time(item),
+            'category': item.category
+        } for item in iterable]
+
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer  
         fields = '__all__'  
-        read_only_fields = ('user', 'ticket_number', 'is_served', 'served_at', 'position',) 
+        read_only_fields = ('user', 'ticket_number', 'is_served', 'served_at', 'position',)
+        list_serializer_class = CustomerListSerializer
 
+    def to_representation(self, instance):
+        queue = instance.queue
+        representation = super().to_representation(instance)
+        created_at = representation['created_at']
+        current_time = datetime.now(timezone('Asia/Bishkek')).astimezone(timezone('Asia/Bishkek'))
+
+        if isinstance(created_at, str):
+            created_at = datetime.fromisoformat(created_at).astimezone(timezone('Asia/Bishkek'))
+
+        time_diff = current_time - created_at
+
+        total_minutes = int(time_diff.total_seconds() // 60)
+
+        representation['minutes_in_queue'] = total_minutes
+        representation['queue'] = queue.name
+
+        user_id = representation['user']
+        user = User.objects.get(id=user_id)
+        username = user.username
+        first_name = user.profile.first_name
+        last_name = user.profile.last_name
+        surname = user.profile.surname
+
+        representation['user'] = username
+        representation['first_name'] = first_name
+        representation['last_name'] = last_name
+        representation['surname'] = surname
+
+        return representation
+    
     def create(self, validated_data):
         queue = validated_data['queue']
         ticket_number = self.get_ticket_number(queue)
@@ -45,8 +109,8 @@ class CustomerSerializer(serializers.ModelSerializer):
         else:
             max_ticket_number = 1
         
-        print(f"{queue.name.upper()[0]}{queue.window_number}{max_ticket_number:02d}")
-        return f"{queue.name.upper()[0]}{queue.window_number}{max_ticket_number:02d}"
+        print(f"{queue.symbol}{max_ticket_number:02d}")
+        return f"{queue.symbol}{max_ticket_number:02d}"
 
 
 

@@ -1,19 +1,23 @@
-from datetime import datetime, timedelta, time
-import re
+from datetime import datetime, timedelta, time, date
+from pytz import timezone as timez
+
 from django.urls import reverse
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
+from django.db.models import Case, When, Value, BooleanField, Count
 from decouple import config
-
-from .permissions import IsOperator
-
 from django.db.models import Max
 from django.utils.text import slugify
 
+from .permissions import IsOperator
+
+
 from .models import Queue, Customer
 from .serializers import QueueSerializer, CustomerSerializer
+from apps.branches.models import Window
+
 
 class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all()
@@ -32,8 +36,25 @@ class QueueViewSet(viewsets.ModelViewSet):
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
-    queryset = Customer.objects.all() 
-    serializer_class = CustomerSerializer  
+    serializer_class = CustomerSerializer
+
+    def get_queryset(self):
+        queryset = Customer.objects.all()
+
+        today = date.today()
+        start_of_day = datetime.combine(today, datetime.min.time()).astimezone(timez('Asia/Bishkek'))
+        end_of_day = datetime.combine(today, datetime.max.time()).astimezone(timez('Asia/Bishkek'))
+        queryset = queryset.filter(created_at__gte=start_of_day, created_at__lte=end_of_day)
+
+        queryset = queryset.annotate(
+            is_regular=Case(
+                When(category='regular', then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
+        ).order_by('is_regular', 'created_at')
+
+        return queryset  
 
     def get_permissions(self):
         if self.action == 'create': 
@@ -67,7 +88,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def get_customer_info(self, request):
         operator = self.request.user  # Получение текущего оператора (пользователя)
-        queue = operator.queue  # Получение очереди оператора
+        queue = operator.queues  # Получение очереди оператора
 
         if not queue:
             return Response({'error': 'Сотрудник не привязан к очереди'}, status=404)  

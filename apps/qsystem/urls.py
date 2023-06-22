@@ -4,7 +4,7 @@ from .views import QueueViewSet, CustomerViewSet, PrintTicket
 
 router = routers.DefaultRouter()
 # router.register(r'queues', QueueViewSet)
-router.register(r'', CustomerViewSet)
+router.register(r'', CustomerViewSet, basename='customer')
 router.register(r'printing', PrintTicket, basename='printing')
 
 urlpatterns = [

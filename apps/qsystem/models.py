@@ -4,33 +4,56 @@ from apps.branches.models import Branch, Terminal
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+from apps.branches.models import Window
 
 User = get_user_model()
 
 class Queue(models.Model):
     name = models.CharField(max_length=100)  # Поле для хранения имени очереди
-    window_number = models.PositiveSmallIntegerField()  # Поле для хранения номера окна
+    description = models.CharField(max_length=200, blank=True, null=True) # Поле для хранения описания очереди
     average_waiting_time = models.PositiveIntegerField(default=0)  # Поле для хранения среднего времени ожидания
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, blank=True, null=True)  # Внешний ключ для связи с моделью филиала
-    operator = models.OneToOneField(User, on_delete=models.CASCADE, blank=True, null=True) # Внешний ключ для связи с пользователем(оператором)
-    kpi = models.FloatField(default=0) # Поле для хранения KPI сотрудника
+    max_waiting_time = models.PositiveIntegerField(default=30) # Поле для хранения максимального времени ожидания
+    schedule_start = models.PositiveIntegerField(default=9) # Поле для хранения начала рабочего дня
+    schedule_end = models.PositiveIntegerField(default=18) # Поле для хранения конца рабочего дня
+    operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)
+    symbol = models.CharField(max_length=2, null=True, blank=True) # Символ очереди
+    
+    CHOISES = [
+        ('individuals', 'Физические лица'),
+        ('legal entities', 'Юридические лица'),
+        ('payment cards', 'Платежные карты')
+    ]
+
+    types = models.CharField(max_length=15, choices=CHOISES)
+
 
     def __str__(self):
         return self.name  
-    
+
     class Meta:
         verbose_name = 'Очередь' 
         verbose_name_plural = 'Очереди' 
+
 
 class Customer(models.Model):
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE)  # Внешний ключ для связи с моделью очереди
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='articles')  # Внешний ключ для связи с моделью пользователей
     ticket_number = models.CharField(max_length=10)  # Поле для хранения номера талона
-    position = models.IntegerField(null=True, blank=True)
+    position = models.IntegerField(null=True, blank=True) # Поле для хранения позиции в очереди
     created_at = models.DateTimeField(auto_now_add=True)  # Поле для хранения даты и времени создания
     is_served = models.BooleanField(default=None, null=True)  # Поле для хранения статуса обслуживания
     served_at = models.DateTimeField(null=True, blank=True)  # Поле для хранения даты и времени обслуживания
-    # terminal = models.ForeignKey(Terminal, on_delete=models.CASCADE, blank=True, null=True)  # Внешний ключ для связи с моделью терминала
+
+    CATEGORY_CHOICES = [
+        ('regular', 'Обычный'),
+        ('pensioner', 'Пенсионер'),
+        ('pregnant', 'Беременная'),
+        ('veteran', 'Ветеран'),
+        ('disabled person', 'С ограниченными возможностями')
+    ]
+
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES) # Поле для хранения категории посетителя
+    notes = models.CharField(max_length=200, null=True, blank=True) # Дополнительные сведения о талоне
 
     def __str__(self):
         return f"Customer {self.user.username} - Queue: {self.queue} - {self.ticket_number}" 
