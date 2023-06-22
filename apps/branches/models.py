@@ -1,5 +1,8 @@
 from django.db import models
 from location_field.models.plain import PlainLocationField
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Branch(models.Model):
     name = models.CharField(max_length=200) #поле для хранения названия филиала
@@ -25,3 +28,9 @@ class Terminal(models.Model):
     class Meta:
         verbose_name = 'Терминал' 
         verbose_name_plural = 'Терминалы'
+
+
+class Window(models.Model):
+    number = models.PositiveSmallIntegerField()
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    operator = models.OneToOneField(User, on_delete=models.CASCADE)

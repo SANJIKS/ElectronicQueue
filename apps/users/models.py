@@ -11,8 +11,22 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=100, null=True, blank=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
+    surname = models.CharField(max_length=100, null=True, blank=True)
+    phone = models.CharField(max_length=50, null=True, blank=True)
     birth_date = models.DateField(null=True, blank=True)
-    is_operator = models.BooleanField(default=False)
+    avatar = models.ImageField(
+        upload_to='users', null=True, blank=True, default='users/default.jpg')
+    bio = models.TextField(max_length=500, blank=True)
+    banned = models.BooleanField(default=False)
+
+    CHOISES = [
+        ('guest', 'Гость'),
+        ('operator', 'Оператор'),
+        ('admin', 'Admin')
+    ]
+
+    position = models.CharField(max_length=20, choices=CHOISES, default='guest')
+
 
     def __str__(self):
         return self.user.username
@@ -23,7 +37,7 @@ class Profile(models.Model):
 def activate_user_handler(sender, user, request, **kwargs):
     if user.email.endswith('@rsk.com'):
         profile, created = Profile.objects.get_or_create(user=user)
-        profile.is_operator = True
+        profile.position = 'operator'
         profile.save()
 
 
