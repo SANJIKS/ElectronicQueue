@@ -188,6 +188,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
 
+# GDAL_LIBRARY_PATH = '/opt/homebrew/lib/libgdal.dylib'
+# GDAL_LIBRARY_PATH = '/opt/homebrew/lib/libgdal.dylib'
+# GEOS_LIBRARY_PATH = '/opt/homebrew/Cellar/geos/3.11.2/lib/libgeos_c.dylib'
+
 
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'username'

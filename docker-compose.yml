@@ -1,0 +1,17 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    volumes:
+      - ./new_data:/var/lib/postgresql/data
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+    
