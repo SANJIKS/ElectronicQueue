@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Max
 from django.contrib.auth import get_user_model
 
-from .models import Queue, Customer
+from .models import Queue, Customer, Waiting_List
 
 
 User = get_user_model()
@@ -17,6 +17,35 @@ class QueueSerializer(serializers.ModelSerializer):
         fields = '__all__'  
         read_only_fields = ('average_waiting_time',)  
 
+class WaitingListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Waiting_List
+        fields = '__all__'
+
+class GetQueueCustomersSerializer(serializers.ModelSerializer):
+    in_queue_time = serializers.SerializerMethodField()
+
+    def get_in_queue_time(self, instance):
+        created_at = instance.created_at
+        current_time = datetime.now(timezone('Asia/Bishkek')).astimezone(timezone('Asia/Bishkek'))
+
+        if isinstance(created_at, str):
+            created_at = datetime.fromisoformat(created_at).astimezone(timezone('Asia/Bishkek'))
+
+        time_diff = current_time - created_at
+
+        total_minutes = int(time_diff.total_seconds() // 60)
+        return total_minutes
+    
+    class Meta:
+        model = Customer
+        fields = ('id', 'ticket_number', 'queue',  'category', 'in_queue_time')
+
+    def to_representation(self, instance):
+        representation =  super().to_representation(instance)
+        representation['queue'] = instance.queue.name
+        return representation
+    
 
 class CustomerListSerializer(serializers.ListSerializer):
     def get_in_queue_time(self, instance):
@@ -46,7 +75,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer  
         fields = '__all__'  
-        read_only_fields = ('user', 'ticket_number', 'is_served', 'served_at', 'position',)
+        read_only_fields = ('user', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
         list_serializer_class = CustomerListSerializer
 
     def to_representation(self, instance):
@@ -76,7 +105,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         representation['first_name'] = first_name
         representation['last_name'] = last_name
         representation['surname'] = surname
-
+        try:
+            representation['branch'] = instance.window.branch.name
+        except:
+            representation['branch'] = None
         return representation
     
     def create(self, validated_data):

@@ -5,6 +5,7 @@ from django.urls import reverse
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from django.utils import timezone
 from django.db.models import Case, When, Value, BooleanField, Count
 from decouple import config
@@ -14,8 +15,8 @@ from django.utils.text import slugify
 from .permissions import IsOperator
 
 
-from .models import Queue, Customer
-from .serializers import QueueSerializer, CustomerSerializer
+from .models import Queue, Customer, Waiting_List
+from .serializers import GetQueueCustomersSerializer, QueueSerializer, CustomerSerializer, WaitingListSerializer
 from apps.branches.models import Window
 
 
@@ -52,7 +53,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 default=Value(False),
                 output_field=BooleanField()
             )
-        ).order_by('is_regular', 'created_at')
+        ).order_by('is_regular', 'position', 'created_at')
 
         return queryset  
 
@@ -84,51 +85,152 @@ class CustomerViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response({'customer_id': customer_id, 'redirect_url': redirect_url}, status=201, headers=headers)
 
+    
+    @action(detail=True, methods=['post'])
+    def post_on_waiting_list(self, request, pk=None):
+        customer = self.get_object()
 
-    @action(detail=False, methods=['get'])
-    def get_customer_info(self, request):
-        operator = self.request.user  # Получение текущего оператора (пользователя)
-        queue = operator.queues  # Получение очереди оператора
-
-        if not queue:
-            return Response({'error': 'Сотрудник не привязан к очереди'}, status=404)  
+        if hasattr(customer, 'waiting_list'):
+            return Response({'message': 'Талон уже в списке ожидания!'})  
         
-        first_customer = Customer.objects.filter(queue=queue, is_served=None).order_by('position').first()  # Получение первого пользователя в очереди
+        queue = customer.queue
 
-        if not first_customer:
-            return Response({'error': 'Нет пользователей в очереди'}, status=404)  
+        customer.position = 0
+        customer.save()
 
-        customer_data = {
-            'Номер талона': first_customer.ticket_number,
-            'Имя посетителя': f"{first_customer.user.profile.first_name} {first_customer.user.profile.last_name}",
-            'Статус': first_customer.is_served,
-        }
+        other_customers = queue.customers.exclude(pk=pk)
 
-        return Response(customer_data)
+        for other_customer in other_customers:
+            other_customer.position -= 1
+            other_customer.save()
+              
+        waiting_list = Waiting_List.objects.create(customer=customer)
+
+        customer.window = None
+        customer.operator = None
+        customer.served_start = None
+        customer.save()
+
+        return Response({'message': 'Талон добавлен в список ожидания'}, status=200)
     
 
+    @action(detail=False, methods=['get'])
+    def get_waiting_list(self, request):
+        operator = self.request.user
+
+        queue_ids = operator.queues.values_list('id', flat=True)
+        waiting_list = Waiting_List.objects.filter(customer__queue_id__in=queue_ids)
+
+        serializer = WaitingListSerializer(waiting_list, many=True)
+
+        return Response(serializer.data, status=200)
+
+
+        
+
     @action(detail=True, methods=['post'])
-    def change_queue(self, request, pk=None):
+    def start(self, request, pk=None):
+        customer = Customer.objects.get(pk=pk)
+        try:
+            waiting_list = Waiting_List.objects.get(customer=customer)
+            waiting_list.delete()
+
+        except Waiting_List.DoesNotExist:
+            pass
+
+        queue = customer.queue
+        current_position = customer.position
+
+        other_customers = queue.customers.exclude(pk=pk)
+
+        for other_customer in other_customers:
+            if other_customer.position > current_position:
+                other_customer.position -= 1
+                other_customer.save()
+        customer.operator = self.request.user
+        customer.served_start = timezone.now()
+        customer.window = self.request.user.window
+        customer.save()
+        serializer = CustomerSerializer(customer)
+        return Response(serializer.data)
+        
+
+    @action(detail=False, methods=['get'])
+    def get_customers_in_queue(self, request):
+        operator = self.request.user  # Получение текущего оператора (пользователя)
+        queue = operator.queues.all()  # Получение очереди оператора
+        
+        if not queue:
+            return Response({'error': 'Сотрудник не привязан к очереди'}, status=404)
+
+
+        queryset = Customer.objects.filter(queue__in=queue, is_served__isnull=True)  # Получение первого пользователя в очереди
+
+        today = datetime.now().astimezone(timez('Asia/Bishkek'))
+        start_of_day = datetime.combine(today.date(), time.min).astimezone(timez('Asia/Bishkek'))
+        end_of_day = datetime.combine(today.date(), time.max).astimezone(timez('Asia/Bishkek'))
+        queryset = queryset.filter(created_at__gte=start_of_day, created_at__lte=end_of_day)  
+
+        queryset = queryset.annotate(
+            is_regular=Case(
+                When(category='regular', then=Value(False)),
+                default=Value(True),
+                output_field=BooleanField()
+            )
+        ).order_by('-is_regular', 'position')
+        
+
+
+        serializer = GetQueueCustomersSerializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    
+    @action(detail=False, methods=['get'])
+    def shift_list(self, request):
+        operator = self.request.user
+        shifted_tickets = Customer.objects.filter(old_operator=operator)
+
+        serializer = GetQueueCustomersSerializer(shifted_tickets, many=True)
+
+        return Response(serializer.data, status=200)
+
+    @action(detail=True, methods=['patch'])
+    def shift_window(self, request, pk=None):
         customer = self.get_object()
 
         # Получаем данные о новой очереди
-        new_queue_id = request.data.get('queue')  # ID новой очереди
+        new_window_id = request.data.get('window')  # ID новой очереди
+
 
         try:
-            new_queue = Queue.objects.get(id=new_queue_id)
-        except Queue.DoesNotExist:
-            return Response({'message': 'Указана недопустимая очередь.'}, status=status.HTTP_400_BAD_REQUEST)
+            new_window = Window.objects.get(id=new_window_id)
+        except Window.DoesNotExist:
+            return Response({'message': 'Такого окна нет.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if customer.served_start is None:
+            return Response({'message': 'Вы не можете перевести талон который не обслуживаете!'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Переносим талон на новую очередь
-        old_queue = customer.queue
+        if customer.window == new_window:
+            return Response({'message': 'Талон уже обслуживается этим окном.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if customer.window.number_of_transfers == customer.window.max_transfers:
+            return Response({'message': 'Вы слишком много переводили талоны.'}, status=status.HTTP_400_BAD_REQUEST)    
+
+        # Переносим талон на другое окно
+        old_window = customer.window
         old_position = customer.position
+        old_operator = customer.operator
+        old_window.number_of_transfers += 1
+        old_window.save()
 
-        customer.queue = new_queue
-        customer.position = new_queue.customer_set.count() + 1  # Позиция становится последней в новой очереди
+        customer.window = new_window
+        customer.position = new_window.customers.count() + 1  # Позиция становится последней в новой очереди
+        customer.operator = new_window.operator
+        customer.old_operator = old_operator
         customer.save()
 
         # Обновляем позиции для остальных талонов в предыдущей очереди
-        customers_to_update = old_queue.customer_set.filter(position__gt=old_position)
+        customers_to_update = old_window.customers.filter(position__gt=old_position)
         for c in customers_to_update:
             c.position -= 1
             c.save()
@@ -141,6 +243,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def mark_as_served(self, request, pk=None):
         customer = self.get_object()
+
+        if customer.served_start is None or customer.operator != self.request.user:
+            return Response({'message': 'Вы не обслуживаете этот талон!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
 
         if customer.is_served:
             return Response({'message': 'Талон уже обслужен.'})
@@ -172,13 +279,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         queue.average_waiting_time = average_waiting_time
         queue.save()
-
-
-        operator = queue.operator
-        serving_time = customer.served_at - customer.created_at
-        operator.queue.kpi += serving_time.total_seconds() / 60 
-        operator.save()
-
         return Response({'message': 'Талон обслужен и среднее время обновлено'})
 
     
@@ -186,6 +286,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def mark_as_cancelled(self, request, pk=None):
         customer = self.get_object()
+
+        if customer.served_start is None or customer.operator != self.request.user:
+            return Response({'message': 'Вы не обслуживаете этот талон!'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not customer.is_served:
             return Response({'message': 'Талон уже отменен.'})
@@ -215,25 +318,107 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         serializer = CustomerSerializer(tickets, many=True)  
         return Response(serializer.data)
-
     
+    
+    @action(detail=True, methods=['get'])
+    def call(self, request, pk=None):
+        customer = Customer.objects.get(pk=pk)
+        
+        if customer.number_of_calls == 5:
+            customer.is_served = False
+            current_position = customer.position
+            customer.position = 0
+            customer.save()
+
+            queue = customer.queue
+            other_customers = queue.customers.exclude(pk=pk)
+
+            for other_customer in other_customers:
+                if other_customer.position > current_position:
+                    other_customer.position -= 1
+                    other_customer.save()
+
+            return Response({'message': 'Талон посетителя закрыт!'})
+        
+        customer.number_of_calls += 1
+        customer.save()
+
+        return Response({'message': f'{customer.ticket_number}-{customer.user.profile.first_name}-{customer.user.profile.last_name} IDI SUDA'}, status=200)
+
+
+    @action(detail=True, methods=['post'])
+    def close(self, request, pk=None):
+        customer = Customer.objects.get(pk=pk)
+        
+        if customer.is_served == False:
+            return Response({'message': 'Талон посетителя уже закрыт!'})
+        
+        customer.is_served = False
+        current_position = customer.position
+        customer.position = 0
+        customer.save()
+
+        queue = customer.queue
+
+        other_customers = queue.customers.exclude(pk=pk)
+
+        for other_customer in other_customers:
+            if other_customer.position > current_position:
+                other_customer.position -= 1
+                other_customer.save()
+
+        return Response({'message': 'Талон посетителя закрыт'})
+
+
+    @action(detail=True, methods=['post'])
+    def move_to_the_end(self, request, pk=None):
+        customer = Customer.objects.get(pk=pk)
+        queue = customer.queue
+
+        current_position = customer.position 
+
+        customer.position = queue.customers.count() + 1
+        customer.save()
+
+        other_customers = queue.customers.exclude(pk=pk)
+
+        for other_customer in other_customers:
+            if other_customer.position > current_position:
+                other_customer.position -= 1
+                other_customer.save()
+
+        return Response({'message': 'Талон перемещен в конец очереди.'})
+    
+    @action(detail=False, methods=['post'])
+    def change_status(self, request):
+        operator = self.request.user
+        if operator.window.is_online == False:
+            operator.window.is_online = True
+            operator.window.save()
+            return Response({'status': 'Online'})
+        else:
+            operator.window.is_online = False
+            operator.window.save()
+            return Response({'status': 'Offline'})
 
 
 
 class PrintTicket(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
-        current_time = datetime.now().time()  # Текущее времени
-        start_time = time(9, 0)  # Задание начала рабочего дня
-        end_time = time(22, 59)  # Задание конца рабочего дня
-
-        if not (start_time <= current_time <= end_time):  # Проверка на рабочее время
-            return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)  # Возврат ошибки 403
-
         try:
             customer = Customer.objects.get(pk=pk)  # Получение объекта талона по номеру 
         except Customer.DoesNotExist:
             return Response({'error': 'Талон с указанным номером не найден'}, status=404)  # Возврат ошибки 404, если талон с указанным номером не найден
-        
+
+        current_time = datetime.now().time()  # Текущее времени
+        queue = customer.queue
+        start_time = time(queue.branch.schedule_start)  # Задание начала рабочего дня
+        end_time = time(queue.branch.schedule_end)  # Задание конца рабочего дня
+
+        if not (start_time <= current_time <= end_time):  # Проверка на рабочее время
+            return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)  # Возврат ошибки 403
+
+
         if customer.is_served is not None:
             return Response({'error': 'Невозможно распечатать талон, т.к. он уже обслужен'}, status=403)
 

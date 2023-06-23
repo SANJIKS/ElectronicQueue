@@ -10,11 +10,12 @@ User = get_user_model()
 
 class Queue(models.Model):
     name = models.CharField(max_length=100)  # Поле для хранения имени очереди
+    branch = models.ForeignKey(Branch, default=1, related_name='queues', on_delete=models.CASCADE) # Филиал
     description = models.CharField(max_length=200, blank=True, null=True) # Поле для хранения описания очереди
     average_waiting_time = models.PositiveIntegerField(default=0)  # Поле для хранения среднего времени ожидания
     max_waiting_time = models.PositiveIntegerField(default=30) # Поле для хранения максимального времени ожидания
-    schedule_start = models.PositiveIntegerField(default=9) # Поле для хранения начала рабочего дня
-    schedule_end = models.PositiveIntegerField(default=18) # Поле для хранения конца рабочего дня
+    # schedule_start = models.PositiveIntegerField(default=9) # Поле для хранения начала рабочего дня
+    # schedule_end = models.PositiveIntegerField(default=18) # Поле для хранения конца рабочего дня
     operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)
     symbol = models.CharField(max_length=2, null=True, blank=True) # Символ очереди
     
@@ -36,14 +37,18 @@ class Queue(models.Model):
 
 
 class Customer(models.Model):
-    queue = models.ForeignKey(Queue, on_delete=models.CASCADE)  # Внешний ключ для связи с моделью очереди
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='articles')  # Внешний ключ для связи с моделью пользователей
+    queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='customers')  # Внешний ключ для связи с моделью очереди
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customers_at_user')  # Внешний ключ для связи с моделью пользователей
     ticket_number = models.CharField(max_length=10)  # Поле для хранения номера талона
     position = models.IntegerField(null=True, blank=True) # Поле для хранения позиции в очереди
     created_at = models.DateTimeField(auto_now_add=True)  # Поле для хранения даты и времени создания
     is_served = models.BooleanField(default=None, null=True)  # Поле для хранения статуса обслуживания
+    served_start = models.DateTimeField(default=None, null=True, blank=True) # Поле для хранения начала времени обслуживания
     served_at = models.DateTimeField(null=True, blank=True)  # Поле для хранения даты и времени обслуживания
-
+    operator = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='customers_at_operator') # Оператор обслуживший талон
+    window = models.ForeignKey(Window, null=True, blank=True, on_delete=models.CASCADE, related_name='customers') # Номер окна
+    old_operator = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='customers_at_old_operator')
+    number_of_calls = models.PositiveSmallIntegerField(default=0)
     CATEGORY_CHOICES = [
         ('regular', 'Обычный'),
         ('pensioner', 'Пенсионер'),
@@ -64,3 +69,6 @@ class Customer(models.Model):
         ordering = ['-position']  # Сортировка объектов по номеру талона
 
 
+class Waiting_List(models.Model):
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -8,7 +8,9 @@ class Branch(models.Model):
     name = models.CharField(max_length=200) #поле для хранения названия филиала
     address = models.CharField(max_length=200)  # Поле для хранения адреса филиала
     phone = models.CharField(max_length=20)  # Поле для хранения телефона филиала
-    location = PlainLocationField(based_fields=['city'], zoom=7)
+    location = PlainLocationField(based_fields=['city'], zoom=7) # Поле локации
+    schedule_start = models.IntegerField(default=9)
+    schedule_end = models.IntegerField(default=20)
 
     def __str__(self):
         return f"Филиал {self.name}"
@@ -34,3 +36,6 @@ class Window(models.Model):
     number = models.PositiveSmallIntegerField()
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     operator = models.OneToOneField(User, on_delete=models.CASCADE)
+    number_of_transfers = models.PositiveSmallIntegerField(default=0)
+    max_transfers = models.PositiveSmallIntegerField(default=5)
+    is_online = models.BooleanField(default=False)
