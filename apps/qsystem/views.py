@@ -88,6 +88,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def post_on_waiting_list(self, request, pk=None):
+        """
+
+        """
         customer = self.get_object()
 
         if hasattr(customer, 'waiting_list'):
@@ -130,6 +133,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
+        """
+        Эндпоинт для начала обслуживания
+        """
         customer = Customer.objects.get(pk=pk)
         try:
             waiting_list = Waiting_List.objects.get(customer=customer)
