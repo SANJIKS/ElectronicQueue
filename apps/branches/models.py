@@ -52,6 +52,7 @@ class Window(models.Model):
     is_online = models.BooleanField(default=False)
     schedule_start = models.IntegerField(default=9)
     schedule_end = models.IntegerField(default=18)
+    is_busy = models.BooleanField(default=False)
 
     def __str__(self):
         return f'Окно №{self.number} - {self.branch.name} - {self.operator.username}'

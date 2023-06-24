@@ -37,9 +37,6 @@ class QueueViewSet(viewsets.ModelViewSet):
 
 
 
-
-
-
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
 
@@ -115,6 +112,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         waiting_list = Waiting_List.objects.create(customer=customer)
 
         customer.window = None
+        customer.operator.window.is_busy = False
         customer.operator = None
         customer.served_start = None
         customer.save()
@@ -159,6 +157,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 other_customer.position -= 1
                 other_customer.save()
         customer.operator = self.request.user
+        self.request.user.window.is_busy = True
         customer.served_start = timezone.now()
         customer.window = self.request.user.window
         customer.save()
@@ -231,6 +230,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         old_window = customer.window
         old_position = customer.position
         old_operator = customer.operator
+        old_window.is_busy = False
         old_window.number_of_transfers += 1
         old_window.save()
 
@@ -266,6 +266,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         customer.is_served = True
         customer.served_at = timezone.now()
         customer.position = 0
+        customer.operator.window.is_busy = False
         customer.save()
 
         queue = customer.queue
@@ -306,6 +307,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
             
         customer.is_served = False
         customer.position = 0
+        customer.operator.window.is_busy = False
         customer.save()
 
         queue = customer.queue
