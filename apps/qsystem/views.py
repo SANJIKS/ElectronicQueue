@@ -12,7 +12,7 @@ from decouple import config
 from django.db.models import Max
 from django.utils.text import slugify
 
-from .permissions import IsOperator
+from .permissions import IsOperator, IsOperatorOfCustomer
 
 
 from .models import Queue, Customer, Waiting_List
@@ -61,11 +61,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         return queryset  
 
+
     def get_permissions(self):
-        if self.action == 'create': 
+        a = self.action
+        if a in ['create', 'user_history', 'get_documents']: 
             return [permissions.IsAuthenticated()]  
-        elif self.action == 'mark_as_served' or self.action == 'mark_as_cancelled' or self.action == 'get_customer_info':
+        elif a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'change_status', 'move_to_the_end']:
             return [IsOperator()]
+        elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
+            return [IsOperator(), IsOperatorOfCustomer()]
         return super().get_permissions()
 
 
@@ -92,9 +96,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def post_on_waiting_list(self, request, pk=None):
-        """
-
-        """
         customer = self.get_object()
 
         if hasattr(customer, 'waiting_list'):
@@ -356,28 +357,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return Response({'message': f'{customer.ticket_number}-{customer.user.profile.first_name}-{customer.user.profile.last_name} IDI SUDA'}, status=200)
 
 
-    @action(detail=True, methods=['post'])
-    def close(self, request, pk=None):
-        customer = Customer.objects.get(pk=pk)
-        
-        if customer.is_served == False:
-            return Response({'message': 'Талон посетителя уже закрыт!'})
-        
-        customer.is_served = False
-        current_position = customer.position
-        customer.position = 0
-        customer.save()
-
-        queue = customer.queue
-
-        other_customers = queue.customers.exclude(pk=pk)
-
-        for other_customer in other_customers:
-            if other_customer.position > current_position:
-                other_customer.position -= 1
-                other_customer.save()
-
-        return Response({'message': 'Талон посетителя закрыт'})
 
 
     @action(detail=True, methods=['post'])
@@ -424,7 +403,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
 
 
-class PrintTicket(viewsets.ViewSet):
+class PrintingView(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         try:
             customer = Customer.objects.get(pk=pk)  # Получение объекта талона по номеру 
@@ -472,7 +451,7 @@ class PrintTicket(viewsets.ViewSet):
             'Имя посетителя': customer.user.username,
             'Статус': customer.is_served, 
             'Наименование организации': 'RSK',
-            'Филиал': customer.queue.branch.location,
+            'Филиал': customer.queue.branch.street,
             # 'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=None, ticket_number__lt=customer.ticket_number).count(),  
             'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer), 
         }

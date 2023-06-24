@@ -27,6 +27,9 @@ class BranchViewSet(ModelViewSet):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
 
+    def get_permissions(self):
+        return super().get_permissions()
+
     @action(detail=True, methods=['get'])
     def get_service_types(self, request, pk=None):
         branch = Branch.objects.get(pk=pk)

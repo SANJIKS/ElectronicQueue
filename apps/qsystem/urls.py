@@ -1,11 +1,11 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import QueueViewSet, CustomerViewSet, PrintTicket
+from .views import QueueViewSet, CustomerViewSet, PrintingView
 
 router = routers.DefaultRouter()
 # router.register(r'queues', QueueViewSet, basename='queue')
 router.register(r'', CustomerViewSet, basename='customer')
-router.register(r'printing', PrintTicket, basename='printing')
+router.register(r'printing', PrintingView, basename='printing')
 
 queue_list = QueueViewSet.as_view({
     'get': 'list',

@@ -3,9 +3,9 @@ services:
   db:
     image: postgres:15.1-alpine
     environment:
-      POSTGRES_USER: Nurik
-      POSTGRES_PASSWORD: 1
-      POSTGRES_DB: queue_db
+      POSTGRES_ENGINE: django.db.backends.postgresql
+      # POSTGRES_PASSWORD: 1
+      # POSTGRES_DB: queue_db
     volumes:
       - ./data:/var/lib/postgresql/data
 
@@ -24,12 +24,12 @@ services:
     depends_on:
       - db
 
-  nginx:
-    image: nginx:1.19.8-alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
-      - ./static:/usr/share/nginx/html/static
-    depends_on:
-      - web
+  # nginx:
+  #   image: nginx:1.19.8-alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
+  #     - ./static:/usr/share/nginx/html/static
+  #   depends_on:
+  #     - web

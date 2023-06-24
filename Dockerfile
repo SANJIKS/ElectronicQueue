@@ -13,8 +13,5 @@ COPY requirements.txt /code/
 # Установите зависимости проекта
 RUN pip install -r requirements.txt
 
-# Установка GDAL
-RUN apt-get update && apt-get install -y gdal-bin
-
 # Скопируйте все содержимое проекта в контейнер
 COPY . /code/
