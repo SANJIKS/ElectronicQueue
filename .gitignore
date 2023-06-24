@@ -140,6 +140,12 @@ ENV/
 env.bak/
 venv.bak/
 
+#docker
+data/
+nginx/
+static/
+code/
+
 # Spyder project settings
 .spyderproject
 .spyproject
