@@ -18,6 +18,3 @@ RUN apt-get update && apt-get install -y gdal-bin
 
 # Скопируйте все содержимое проекта в контейнер
 COPY . /code/
-
-# Запустите команду для запуска проекта Django
-CMD ["python", "manage.py", "migrate"]
