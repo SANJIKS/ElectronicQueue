@@ -140,6 +140,12 @@ ENV/
 env.bak/
 venv.bak/
 
+#docker
+data/
+nginx/
+static/
+code/
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -283,3 +289,9 @@ pyrightconfig.json
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/django,python,visualstudiocode
+
+Dockerfile
+docker-compose.yml
+nginx/
+data/
+static/

@@ -12,7 +12,7 @@ from decouple import config
 from django.db.models import Max
 from django.utils.text import slugify
 
-from .permissions import IsOperator
+from .permissions import IsOperator, IsOperatorOfCustomer
 
 
 from .models import Queue, Customer, Waiting_List
@@ -36,6 +36,7 @@ class QueueViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
 
@@ -57,11 +58,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         return queryset  
 
+
     def get_permissions(self):
-        if self.action == 'create': 
+        a = self.action
+        if a in ['create', 'user_history', 'get_documents']: 
             return [permissions.IsAuthenticated()]  
-        elif self.action == 'mark_as_served' or self.action == 'mark_as_cancelled' or self.action == 'get_customer_info':
+        elif a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'change_status', 'move_to_the_end']:
             return [IsOperator()]
+        elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
+            return [IsOperator(), IsOperatorOfCustomer()]
         return super().get_permissions()
 
 
@@ -107,6 +112,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         waiting_list = Waiting_List.objects.create(customer=customer)
 
         customer.window = None
+        customer.operator.window.is_busy = False
         customer.operator = None
         customer.served_start = None
         customer.save()
@@ -130,6 +136,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
+        """
+        Эндпоинт для начала обслуживания
+        """
         customer = Customer.objects.get(pk=pk)
         try:
             waiting_list = Waiting_List.objects.get(customer=customer)
@@ -148,6 +157,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 other_customer.position -= 1
                 other_customer.save()
         customer.operator = self.request.user
+        self.request.user.window.is_busy = True
         customer.served_start = timezone.now()
         customer.window = self.request.user.window
         customer.save()
@@ -220,6 +230,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         old_window = customer.window
         old_position = customer.position
         old_operator = customer.operator
+        old_window.is_busy = False
         old_window.number_of_transfers += 1
         old_window.save()
 
@@ -255,6 +266,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         customer.is_served = True
         customer.served_at = timezone.now()
         customer.position = 0
+        customer.operator.window.is_busy = False
         customer.save()
 
         queue = customer.queue
@@ -295,6 +307,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
             
         customer.is_served = False
         customer.position = 0
+        customer.operator.window.is_busy = False
         customer.save()
 
         queue = customer.queue
@@ -346,28 +359,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return Response({'message': f'{customer.ticket_number}-{customer.user.profile.first_name}-{customer.user.profile.last_name} IDI SUDA'}, status=200)
 
 
-    @action(detail=True, methods=['post'])
-    def close(self, request, pk=None):
-        customer = Customer.objects.get(pk=pk)
-        
-        if customer.is_served == False:
-            return Response({'message': 'Талон посетителя уже закрыт!'})
-        
-        customer.is_served = False
-        current_position = customer.position
-        customer.position = 0
-        customer.save()
-
-        queue = customer.queue
-
-        other_customers = queue.customers.exclude(pk=pk)
-
-        for other_customer in other_customers:
-            if other_customer.position > current_position:
-                other_customer.position -= 1
-                other_customer.save()
-
-        return Response({'message': 'Талон посетителя закрыт'})
 
 
     @action(detail=True, methods=['post'])
@@ -402,8 +393,19 @@ class CustomerViewSet(viewsets.ModelViewSet):
             return Response({'status': 'Offline'})
 
 
+    @action(detail=True, methods=['get'])
+    def get_documents(self, request, pk=None):
+        queue = Queue.objects.get(pk=pk)
 
-class PrintTicket(viewsets.ViewSet):
+        documents = {
+            'Обязательные документы':queue.documents,
+            'Необязательные документы': queue.optional_documents
+        }
+        return Response(documents, status=200)
+
+
+
+class PrintingView(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         try:
             customer = Customer.objects.get(pk=pk)  # Получение объекта талона по номеру 
@@ -445,15 +447,13 @@ class PrintTicket(viewsets.ViewSet):
         ticket_data = {
             'ID': customer.pk,
             'Номер талона': customer.ticket_number,
+            'Очередь': customer.queue.name, 
             'Позиция': customer.position,
             'Выдано': customer.created_at,  
             'Имя посетителя': customer.user.username,
             'Статус': customer.is_served, 
             'Наименование организации': 'RSK',
-            'Филиал': customer.queue.branch.address,
-            'Очередь': customer.queue.name, 
-            'Номер окна': customer.queue.window_number,
-            'Оператор': customer.queue.operator.username, 
+            'Филиал': customer.queue.branch.street,
             # 'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=None, ticket_number__lt=customer.ticket_number).count(),  
             'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer), 
         }

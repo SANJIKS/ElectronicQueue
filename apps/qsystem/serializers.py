@@ -17,10 +17,12 @@ class QueueSerializer(serializers.ModelSerializer):
         fields = '__all__'  
         read_only_fields = ('average_waiting_time',)  
 
+
 class WaitingListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Waiting_List
         fields = '__all__'
+
 
 class GetQueueCustomersSerializer(serializers.ModelSerializer):
     in_queue_time = serializers.SerializerMethodField()

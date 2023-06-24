@@ -28,7 +28,8 @@ urlpatterns = [
     path('user/', include('apps.users.urls')),
     path('', schema_view.with_ui('swagger',
          cache_timeout=0), name='schema-swagger-ui'),
-    path('customers/', include('apps.qsystem.urls')),
+    path('', include('apps.qsystem.urls')),
+    path('', include('apps.branches.urls')),
 ]
 
 if settings.DEBUG:
