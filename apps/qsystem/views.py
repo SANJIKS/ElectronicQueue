@@ -36,6 +36,10 @@ class QueueViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+
+
+
+
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
 
@@ -402,6 +406,17 @@ class CustomerViewSet(viewsets.ModelViewSet):
             return Response({'status': 'Offline'})
 
 
+    @action(detail=True, methods=['get'])
+    def get_documents(self, request, pk=None):
+        queue = Queue.objects.get(pk=pk)
+
+        documents = {
+            'Обязательные документы':queue.documents,
+            'Необязательные документы': queue.optional_documents
+        }
+        return Response(documents, status=200)
+
+
 
 class PrintTicket(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
@@ -445,15 +460,13 @@ class PrintTicket(viewsets.ViewSet):
         ticket_data = {
             'ID': customer.pk,
             'Номер талона': customer.ticket_number,
+            'Очередь': customer.queue.name, 
             'Позиция': customer.position,
             'Выдано': customer.created_at,  
             'Имя посетителя': customer.user.username,
             'Статус': customer.is_served, 
             'Наименование организации': 'RSK',
-            'Филиал': customer.queue.branch.address,
-            'Очередь': customer.queue.name, 
-            'Номер окна': customer.queue.window_number,
-            'Оператор': customer.queue.operator.username, 
+            'Филиал': customer.queue.branch.location,
             # 'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=None, ticket_number__lt=customer.ticket_number).count(),  
             'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer), 
         }

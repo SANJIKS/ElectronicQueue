@@ -8,28 +8,31 @@ from apps.branches.models import Window
 
 User = get_user_model()
 
-class Queue(models.Model):
-    name = models.CharField(max_length=100)  # Поле для хранения имени очереди
-    branch = models.ForeignKey(Branch, default=1, related_name='queues', on_delete=models.CASCADE) # Филиал
-    description = models.CharField(max_length=200, blank=True, null=True) # Поле для хранения описания очереди
-    average_waiting_time = models.PositiveIntegerField(default=0)  # Поле для хранения среднего времени ожидания
-    max_waiting_time = models.PositiveIntegerField(default=30) # Поле для хранения максимального времени ожидания
-    # schedule_start = models.PositiveIntegerField(default=9) # Поле для хранения начала рабочего дня
-    # schedule_end = models.PositiveIntegerField(default=18) # Поле для хранения конца рабочего дня
-    operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)
-    symbol = models.CharField(max_length=2, null=True, blank=True) # Символ очереди
-    
+class Services(models.Model):
     CHOISES = [
         ('individuals', 'Физические лица'),
         ('legal entities', 'Юридические лица'),
         ('payment cards', 'Платежные карты')
     ]
 
-    types = models.CharField(max_length=15, choices=CHOISES)
+    name = models.CharField(max_length=100, choices=CHOISES)
+
+
+class Queue(models.Model): 
+    name = models.CharField(max_length=100)  # Поле для хранения имени очереди
+    branch = models.ForeignKey(Branch, default=1, related_name='queues', on_delete=models.CASCADE) # Филиал
+    description = models.CharField(max_length=200, blank=True, null=True) # Поле для хранения описания очереди
+    documents = models.CharField(max_length=500, null=True, blank=True) # Документы
+    optional_documents = models.CharField(max_length=500, null=True, blank=True) # Необязательные документы
+    average_waiting_time = models.PositiveIntegerField(default=0)  # Поле для хранения среднего времени ожидания
+    max_waiting_time = models.PositiveIntegerField(default=30) # Поле для хранения максимального времени ожидания
+    operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)
+    symbol = models.CharField(max_length=2, null=True, blank=True) # Символ очереди
+    services = models.ForeignKey(Services, on_delete=models.CASCADE, related_name='queues', null=True, blank=True) # Тип услуги
 
 
     def __str__(self):
-        return self.name  
+        return f'{self.name}-{self.branch.name}'  
 
     class Meta:
         verbose_name = 'Очередь' 
@@ -47,8 +50,9 @@ class Customer(models.Model):
     served_at = models.DateTimeField(null=True, blank=True)  # Поле для хранения даты и времени обслуживания
     operator = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='customers_at_operator') # Оператор обслуживший талон
     window = models.ForeignKey(Window, null=True, blank=True, on_delete=models.CASCADE, related_name='customers') # Номер окна
-    old_operator = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='customers_at_old_operator')
-    number_of_calls = models.PositiveSmallIntegerField(default=0)
+    old_operator = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='customers_at_old_operator') # Предыдущий оператор
+    number_of_calls = models.PositiveSmallIntegerField(default=0) # Количество вызовов этого талона к оператору
+
     CATEGORY_CHOICES = [
         ('regular', 'Обычный'),
         ('pensioner', 'Пенсионер'),
