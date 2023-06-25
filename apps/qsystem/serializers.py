@@ -70,14 +70,15 @@ class CustomerListSerializer(serializers.ListSerializer):
             'ticket_number': item.ticket_number,
             'queue': item.queue.name,
             'waiting_time': self.get_in_queue_time(item),
-            'category': item.category
+            'category': item.category,
+            'position': item.position
         } for item in iterable]
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer  
         fields = '__all__'  
-        read_only_fields = ('user', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
+        read_only_fields = ('user','time', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
         list_serializer_class = CustomerListSerializer
 
     def to_representation(self, instance):
