@@ -70,7 +70,8 @@ class CustomerListSerializer(serializers.ListSerializer):
             'ticket_number': item.ticket_number,
             'queue': item.queue.name,
             'waiting_time': self.get_in_queue_time(item),
-            'category': item.category
+            'category': item.category,
+            'position': item.position
         } for item in iterable]
 
 class CustomerSerializer(serializers.ModelSerializer):
