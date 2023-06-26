@@ -6,19 +6,21 @@ from django.utils import timezone
 from django.db.models import Case, When, Value, BooleanField, Count
 from decouple import config
 from django.db.models import Max
+from django.http import HttpResponseNotAllowed
 
 
 from rest_framework.views import APIView
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
-from .permissions import IsOperator
+from .permissions import IsOperatorOnline
 from .models import Profile
 from .serializers import ProfileSerializer
 from apps.qsystem.models import Customer, Waiting_List
-from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerializer, WaitingListSerializer
+from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerializer, WaitingListSerializer, ShiftWindow
+from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
 from apps.branches.models import Window
 
 
@@ -59,11 +61,52 @@ class ProfileView(viewsets.ViewSet):
         return Response(serializer.data)
     
 
-class OperatorViewSet(viewsets.ViewSet):
+class OperatorViewSet(viewsets.ModelViewSet):
+    serializer_class = CustomerSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'change_status' or self.action == 'mark_as_cancelled' or self.action == 'mark_as_served' or self.action == 'start':
+            return serializers.Serializer
+        elif self.action == 'shift_window':
+            return ShiftWindow
+        else:    
+            return super().get_serializer_class()
+        
+
+    def get_queryset(self):
+        queryset = Customer.objects.none()
+
+        if self.action == 'get_customers_in_queue':
+            queryset = Customer.objects.filter(created_at__date=date.today()).order_by('position')
+        elif self.action in ['mark_as_cancelled', 'mark_as_served', 'post_on_waiting_list', 'shift_window']:
+            queryset = Customer.objects.filter(created_at__date=date.today(), is_served__isnull=True).order_by('created_at')
+        return queryset
+
     def get_permissions(self):
-        if self.action == 'change_status':
+        a = self.action
+        if a == 'change_status':
+            return [IsOperatorOnline()]
+        elif a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
             return [IsOperator()]
+        elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
+            return [IsOperator(), IsOperatorOfCustomer()]
         return super().get_permissions()
+    
+
+    def create(self, request, *args, **kwargs):
+        return Response({'message': 'Воспользуйтесь customers/'})
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response({'message': 'Воспользуйтесь customers/'})
+
+    def update(self, request, *args, **kwargs):
+        return Response({'message': 'Воспользуйтесь customers/'})
+
+    def partial_update(self, request, *args, **kwargs):
+        return Response({'message': 'Воспользуйтесь customers/'})
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({'message': 'Воспользуйтесь customers/'})
     
 
     @action(detail=False, methods=['post'])
