@@ -65,7 +65,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
 
     def get_serializer_class(self):
-        if self.action == 'change_status' or self.action == 'mark_as_cancelled' or self.action == 'mark_as_served' or self.action == 'start':
+        if self.action == 'change_status' or self.action == 'mark_as_cancelled' or self.action == 'mark_as_served' or self.action == 'start' or self.action == 'post_on_waiting_list' or self.action == 'move_to_the_end':
             return serializers.Serializer
         elif self.action == 'shift_window':
             return ShiftWindow
