@@ -127,8 +127,6 @@ class CustomerSerializer(serializers.ModelSerializer):
 
         category = validated_data.get('category')
         if category != 'regular':
-            # Установить позицию выше всех талонов с категорией 'regular',
-            # но не выше других талонов
             position = Customer.objects.exclude(category='regular').filter(queue=queue).aggregate(Max('position'))
         else:
             position = Customer.objects.filter(queue=queue).aggregate(Max('position'))
@@ -147,7 +145,6 @@ class CustomerSerializer(serializers.ModelSerializer):
 
         created_customer = super().create(validated_data)
 
-        # Обновление позиции остальных талонов, которые следуют после созданного талона
 
         return created_customer
 
