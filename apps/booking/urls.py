@@ -4,8 +4,8 @@ from rest_framework import routers
 from .views import BookingViewSet
 
 router = routers.DefaultRouter()
-router.register('booking', BookingViewSet)
+router.register('', BookingViewSet)
 
 urlpatterns = [
-    path('branches/', include(router.urls)),
+    path('', include(router.urls)),
 ]

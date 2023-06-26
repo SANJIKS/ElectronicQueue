@@ -20,7 +20,8 @@ queue_detail = QueueViewSet.as_view({
 })
 
 urlpatterns = [
-    path('customers/', include(router.urls)),
     path('queues/', queue_list),
+    path('customers/', include(router.urls)),
     path('queues/<int:pk>/', queue_detail),
+    path('queues/<int:pk>/get_documents/', QueueViewSet.as_view({'get': 'get_documents'}), name='get_documents'),
 ]
