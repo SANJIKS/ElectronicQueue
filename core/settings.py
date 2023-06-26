@@ -25,10 +25,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis',
+    'django.contrib.sites',
 
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',
     'drf_api_logger',
 
     'rest_framework',
@@ -38,13 +39,12 @@ INSTALLED_APPS = [
     'corsheaders',
     'celery',
     'django_celery_beat',
-    'location_field.apps.DefaultConfig',
-
+    
     #my apps
     'apps.qsystem',
     'apps.branches',
     'apps.users',
-    
+    'apps.booking',
 ]
 
 MIDDLEWARE = [
@@ -187,6 +187,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
+
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'username'
 
 
 ACCOUNT_EMAIL_REQUIRED = False

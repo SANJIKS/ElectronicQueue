@@ -23,6 +23,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/', include('allauth.urls')),
     path('user/', include('djoser.urls')),
     path('login/', include('djoser.urls.jwt')),
     path('user/', include('apps.users.urls')),
@@ -30,6 +31,7 @@ urlpatterns = [
          cache_timeout=0), name='schema-swagger-ui'),
     path('', include('apps.qsystem.urls')),
     path('', include('apps.branches.urls')),
+    path('booking/', include('apps.booking.urls')),
 ]
 
 if settings.DEBUG:
