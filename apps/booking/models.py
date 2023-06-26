@@ -7,10 +7,17 @@ from apps.branches.models import Branch
 from apps.qsystem.models import Queue
 
 class Booking(models.Model):
-    queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='bookings')
-    time = models.TimeField(null=True, blank=True)
-    date = models.DateField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    pin = models.IntegerField()
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
-    is_registered = models.BooleanField(default=False)
+    queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='bookings') # Очередь(Услуга)
+    time = models.TimeField(null=True, blank=True) # Время бронирования
+    date = models.DateField(null=True, blank=True) # Дата бронирования
+    created_at = models.DateTimeField(auto_now_add=True) # Дата и время создания бронирования
+    pin = models.IntegerField() # Пин-код бронирования
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True) # Пользователь
+    is_registered = models.BooleanField(default=False) # Флаг, указывающий, распечатан ли талон
+
+    def __str__(self):
+        return f"{self.queue} - {self.user}"
+    
+    class Meta:
+        verbose_name = 'Запись'
+        verbose_name_plural = 'Записи'

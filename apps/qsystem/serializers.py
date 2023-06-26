@@ -12,9 +12,12 @@ from .models import Queue, Customer, Waiting_List
 User = get_user_model()
 
 
+#Сериализатор для передачи талона в другое окно
 class ShiftWindow(serializers.Serializer):
     window = serializers.CharField()
 
+
+#Сериализатор очередей
 class QueueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Queue  
@@ -22,16 +25,14 @@ class QueueSerializer(serializers.ModelSerializer):
         read_only_fields = ('average_waiting_time',)  
 
 
+#Сериализатор листа ожидания
 class WaitingListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Waiting_List
         fields = '__all__'
 
 
-class GetQueueCustomersSerializer(serializers.ModelSerializer):
-    in_queue_time = serializers.SerializerMethodField()
-
-    def get_in_queue_time(self, instance):
+def generate_in_queue_time(instance):
         created_at = instance.created_at
         current_time = datetime.now(timezone('Asia/Bishkek')).astimezone(timezone('Asia/Bishkek'))
 
@@ -42,6 +43,14 @@ class GetQueueCustomersSerializer(serializers.ModelSerializer):
 
         total_minutes = int(time_diff.total_seconds() // 60)
         return total_minutes
+
+
+#Сериализатор для получения талонов в очереди оператора
+class GetQueueCustomersSerializer(serializers.ModelSerializer):
+    in_queue_time = serializers.SerializerMethodField()
+
+    def get_in_queue_time(self, instance):
+        return generate_in_queue_time(instance)
     
     class Meta:
         model = Customer
@@ -53,6 +62,7 @@ class GetQueueCustomersSerializer(serializers.ModelSerializer):
         return representation
     
 
+#Сериализатор для получения списка талонов
 class CustomerListSerializer(serializers.ListSerializer):
     def get_in_queue_time(self, instance):
         created_at = instance.created_at
@@ -73,11 +83,13 @@ class CustomerListSerializer(serializers.ListSerializer):
             'id': item.pk,
             'ticket_number': item.ticket_number,
             'queue': item.queue.name,
-            'waiting_time': self.get_in_queue_time(item),
+            'waiting_time': generate_in_queue_time(item),
             'category': item.category,
             'position': item.position
         } for item in iterable]
 
+
+#Сериализатор Талонов
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer  
@@ -161,7 +173,6 @@ class CustomerSerializer(serializers.ModelSerializer):
         else:
             max_ticket_number = 1
         
-        print(f"{queue.symbol}{max_ticket_number:02d}")
         return f"{queue.symbol}{max_ticket_number:02d}"
 
 

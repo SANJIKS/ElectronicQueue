@@ -8,6 +8,7 @@ from apps.branches.models import Window
 
 User = get_user_model()
 
+#Модель Категории Услуги
 class Services(models.Model):
     CHOISES = [
         ('individuals', 'Физические лица'),
@@ -15,9 +16,10 @@ class Services(models.Model):
         ('payment cards', 'Платежные карты')
     ]
 
-    name = models.CharField(max_length=100, choices=CHOISES)
+    name = models.CharField(max_length=100, choices=CHOISES) # Название Категории
 
 
+#Модель Очереди(Услуги)
 class Queue(models.Model): 
     name = models.CharField(max_length=100)  # Поле для хранения имени очереди
     branch = models.ForeignKey(Branch, default=1, related_name='queues', on_delete=models.CASCADE) # Филиал
@@ -39,6 +41,7 @@ class Queue(models.Model):
         verbose_name_plural = 'Очереди' 
 
 
+#Модель Талона
 class Customer(models.Model):
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='customers')  # Внешний ключ для связи с моделью очереди
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customers_at_user')  # Внешний ключ для связи с моделью пользователей
@@ -64,7 +67,7 @@ class Customer(models.Model):
 
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES) # Поле для хранения категории посетителя
     notes = models.CharField(max_length=200, null=True, blank=True) # Дополнительные сведения о талоне
-    time = models.TimeField(null=True, blank=True)
+    time = models.TimeField(null=True, blank=True) # Время предварительной записи
 
     def __str__(self):
         return f"Customer {self.user.username} - Queue: {self.queue} - {self.ticket_number}" 
@@ -72,12 +75,20 @@ class Customer(models.Model):
     class Meta:
         verbose_name = 'Талон'  
         verbose_name_plural = 'Талоны'  
-        ordering = ['-position']  # Сортировка объектов по номеру талона
+        ordering = ['-created_at']  
 
 
+#Модель Листа Ожидания
 class Waiting_List(models.Model):
-    customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE) # Связь с талоном
+    created_at = models.DateTimeField(auto_now_add=True) # Дата создания
+
+    def __str__(self):
+        return self.customer.user
+    
+    class Meta:
+        verbose_name = 'Лист ожидания'  
+        verbose_name_plural = 'Лист ожидания'  
 
 
 

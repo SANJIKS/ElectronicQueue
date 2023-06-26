@@ -8,16 +8,16 @@ User = get_user_model()
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=100, null=True, blank=True)
-    last_name = models.CharField(max_length=100, null=True, blank=True)
-    surname = models.CharField(max_length=100, null=True, blank=True)
-    phone = models.CharField(max_length=50, null=True, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE) # Пользователь
+    first_name = models.CharField(max_length=100, null=True, blank=True) # Имя
+    last_name = models.CharField(max_length=100, null=True, blank=True) # Фамилия
+    surname = models.CharField(max_length=100, null=True, blank=True) # Отчество
+    phone = models.CharField(max_length=50, null=True, blank=True) # Номер телефона
+    birth_date = models.DateField(null=True, blank=True) # Дата рождения
     avatar = models.ImageField(
-        upload_to='users', null=True, blank=True, default='users/default.jpg')
-    bio = models.TextField(max_length=500, blank=True)
-    banned = models.BooleanField(default=False)
+        upload_to='users', null=True, blank=True, default='users/default.jpg') # Изображение профиля
+    bio = models.TextField(max_length=500, blank=True) # Доп. Инфо
+    banned = models.BooleanField(default=False) # Флаг, указывающий, заблокирован ли пользователь
 
     CHOISES = [
         ('guest', 'Гость'),
@@ -25,7 +25,7 @@ class Profile(models.Model):
         ('admin', 'Admin')
     ]
 
-    position = models.CharField(max_length=20, choices=CHOISES, default='guest')
+    position = models.CharField(max_length=20, choices=CHOISES, default='guest') # Должность
 
 
     def __str__(self):
