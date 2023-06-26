@@ -3,13 +3,17 @@ from pytz import timezone
 
 from rest_framework import serializers
 from django.db import models
-from django.db.models import Max
+from django.db.models import Max, F
 from django.contrib.auth import get_user_model
 
 from .models import Queue, Customer, Waiting_List
 
 
 User = get_user_model()
+
+
+class ShiftWindow(serializers.Serializer):
+    window = serializers.CharField()
 
 class QueueSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,7 +45,7 @@ class GetQueueCustomersSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Customer
-        fields = ('id', 'ticket_number', 'queue',  'category', 'in_queue_time')
+        fields = ('id', 'position', 'ticket_number', 'queue',  'category', 'in_queue_time')
 
     def to_representation(self, instance):
         representation =  super().to_representation(instance)
@@ -121,7 +125,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         validated_data['ticket_number'] = ticket_number
         validated_data['user'] = self.context['request'].user
 
-        position = Customer.objects.filter(queue=queue).aggregate(Max('position'))
+        category = validated_data.get('category')
+        if category != 'regular':
+            # Установить позицию выше всех талонов с категорией 'regular',
+            # но не выше других талонов
+            position = Customer.objects.exclude(category='regular').filter(queue=queue).aggregate(Max('position'))
+        else:
+            position = Customer.objects.filter(queue=queue).aggregate(Max('position'))
+        
         last_position = position.get('position__max')
 
         if last_position is not None:
@@ -129,9 +140,18 @@ class CustomerSerializer(serializers.ModelSerializer):
         else:
             validated_data['position'] = 1
 
+        other_customers = Customer.objects.filter(queue=queue, position__gt=validated_data['position'] - 1)
+        for other_customer in other_customers:
+            other_customer.position += 1
+            other_customer.save()
+
+        created_customer = super().create(validated_data)
+
+        # Обновление позиции остальных талонов, которые следуют после созданного талона
+
+        return created_customer
+
         
-        return super().create(validated_data)  # Создать объект с использованием базового метода create()
-    
     def get_ticket_number(self, queue):
         if queue is None:
             return ""

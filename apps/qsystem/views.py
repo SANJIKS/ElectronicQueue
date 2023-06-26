@@ -16,7 +16,7 @@ from .permissions import IsOperator, IsOperatorOfCustomer
 
 
 from .models import Queue, Customer, Waiting_List
-from .serializers import GetQueueCustomersSerializer, QueueSerializer, CustomerSerializer, WaitingListSerializer
+from .serializers import GetQueueCustomersSerializer, QueueSerializer, CustomerSerializer, ShiftWindow, WaitingListSerializer
 from apps.branches.models import Window
 
 
@@ -40,23 +40,25 @@ class QueueViewSet(viewsets.ModelViewSet):
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
 
+    def get_serializer_class(self):
+        if self.action == 'change_status' or self.action == 'mark_as_cancelled' or self.action == 'mark_as_served' or self.action == 'start':
+            return None
+        elif self.action == 'shift_window':
+            return ShiftWindow
+        else:    
+            return super().get_serializer_class()
+
+
     def get_queryset(self):
-        queryset = Customer.objects.all()
+        queryset = Customer.objects.filter(created_at__date=date.today()) 
 
-        today = date.today()
-        start_of_day = datetime.combine(today, datetime.min.time()).astimezone(timez('Asia/Bishkek'))
-        end_of_day = datetime.combine(today, datetime.max.time()).astimezone(timez('Asia/Bishkek'))
-        queryset = queryset.filter(created_at__gte=start_of_day, created_at__lte=end_of_day)
+        if self.action == 'get_customers_in_queue':
+            queryset = queryset.order_by('position')
+        else:
+            queryset = queryset.order_by('created_at')
 
-        queryset = queryset.annotate(
-            is_regular=Case(
-                When(category='regular', then=Value(True)),
-                default=Value(False),
-                output_field=BooleanField()
-            )
-        ).order_by('is_regular', 'position', 'created_at')
+        return queryset
 
-        return queryset  
 
 
     def get_permissions(self):
@@ -414,8 +416,8 @@ class PrintingView(viewsets.ViewSet):
 
         current_time = datetime.now().time()  # Текущее времени
         queue = customer.queue
-        start_time = time(queue.branch.schedule_start)  # Задание начала рабочего дня
-        end_time = time(queue.branch.schedule_end)  # Задание конца рабочего дня
+        start_time = queue.branch.schedule_start  # Задание начала рабочего дня
+        end_time = queue.branch.schedule_end  # Задание конца рабочего дня
 
         if not (start_time <= current_time <= end_time):  # Проверка на рабочее время
             return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)  # Возврат ошибки 403
@@ -447,7 +449,8 @@ class PrintingView(viewsets.ViewSet):
         ticket_data = {
             'ID': customer.pk,
             'Номер талона': customer.ticket_number,
-            'Очередь': customer.queue.name, 
+            'Очередь': customer.queue.name,
+            'Тип услуги': customer.queue.services.name, 
             'Позиция': customer.position,
             'Выдано': customer.created_at,  
             'Имя посетителя': customer.user.username,

@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from djoser.signals import user_activated
+from djoser.signals import user_activated, user_registered
 from django.db import models
 
 User = get_user_model()
@@ -40,6 +40,10 @@ def activate_user_handler(sender, user, request, **kwargs):
         profile.position = 'operator'
         profile.save()
 
+@receiver(user_registered)
+def activate_user_auto(sender, user, request, **kwargs):
+    user.is_active = True
+    user.save()
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

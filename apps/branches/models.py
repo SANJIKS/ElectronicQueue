@@ -15,8 +15,8 @@ class Branch(models.Model):
     name = models.CharField(max_length=200) #поле для хранения названия филиала
     phone = models.CharField(max_length=20)  # Поле для хранения телефона филиала
     admin = models.ForeignKey(User, related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
-    schedule_start = models.IntegerField(default=9) # Начало рабочего дня
-    schedule_end = models.IntegerField(default=20) # Конец рабочего дня
+    schedule_start = models.TimeField(default="9:00") # Начало рабочего дня
+    schedule_end = models.TimeField(default="20:00") # Конец рабочего дня
     # location = PlainLocationField(based_fields=['city'], zoom=7) # Поле локации
     region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='branches', null=True, blank=True)
     city = models.CharField(max_length=100, null=True, blank=True) # Город
