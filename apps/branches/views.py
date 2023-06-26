@@ -17,6 +17,10 @@ class RegionViewSet(ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def region_branches(self, request, pk=None):
+        """ 
+        Эндпоинт для получения филиалов находящихся в этой области
+        Нужно передать ID области
+        """
         region = Region.objects.get(pk=pk)
         branches = region.branches.all()
         serializer = BranchSerializer(branches, many=True)
@@ -32,6 +36,10 @@ class BranchViewSet(ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def get_service_types(self, request, pk=None):
+        """ 
+        Эндпоинт для получения типов услуг в этом филиале
+        Нужно передать ID филиала
+        """
         branch = Branch.objects.get(pk=pk)
         queues = branch.queues.all()  
         service_types = set(queue.services.pk for queue in queues)
@@ -45,6 +53,10 @@ class ServiceQueueAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
+        """
+        Эндпоинт для получения всех услуг(очередей) в этом филиале
+        Нужно передать ID филиала и ID услуги
+        """
         branch_pk = kwargs.get('branch_pk')
         service_pk = kwargs.get('service_pk')
 

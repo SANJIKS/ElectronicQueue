@@ -86,6 +86,10 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def register_customer(self, request):
+        """
+        Эндпоинт для печати талона по предварительной записи
+        Нужно передать ФИО и пин-код талона
+        """
         first_name = request.data.get('first_name')
         last_name = request.data.get('last_name')
         surname = request.data.get('surname')

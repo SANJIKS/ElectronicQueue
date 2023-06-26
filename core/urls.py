@@ -26,7 +26,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('user/', include('djoser.urls')),
     path('login/', include('djoser.urls.jwt')),
-    path('user/', include('apps.users.urls')),
+    path('', include('apps.users.urls')),
     path('', schema_view.with_ui('swagger',
          cache_timeout=0), name='schema-swagger-ui'),
     path('', include('apps.qsystem.urls')),

@@ -4,7 +4,7 @@ from .views import RegionViewSet, BranchViewSet, ServiceQueueAPIView
 
 router = routers.DefaultRouter()
 router.register('region', RegionViewSet)
-router.register('branch', BranchViewSet)
+router.register('', BranchViewSet)
 
 urlpatterns = [
     path('branches/', include(router.urls)),
