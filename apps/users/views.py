@@ -8,6 +8,8 @@ from decouple import config
 from django.db.models import Max
 from django.http import HttpResponseNotAllowed
 
+from drf_yasg.utils import swagger_auto_schema
+
 
 from rest_framework.views import APIView
 from rest_framework import viewsets, status, serializers
@@ -17,11 +19,11 @@ from rest_framework.permissions import IsAuthenticated
 
 from .permissions import IsOperatorOnline
 from .models import Profile
-from .serializers import ProfileSerializer
+from .serializers import ChangeNotes, GetWindowsSerializer, ProfileSerializer
 from apps.qsystem.models import Customer, Waiting_List
 from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerializer, WaitingListSerializer, ShiftWindow
 from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
-from apps.branches.models import Window
+from apps.branches.models import Branch, Window
 
 
 class ProfileView(viewsets.ViewSet):
@@ -270,6 +272,14 @@ class OperatorViewSet(viewsets.ModelViewSet):
     
 
     @action(detail=False, methods=['get'])
+    def get_all_windows(self, request):
+        branch = self.request.user.window.branch
+        windows = Window.objects.filter(branch=branch)
+        serializer = GetWindowsSerializer(windows, many=True, context={'operator': self.request.user})
+        return Response(serializer.data, status=200)
+
+
+    @action(detail=False, methods=['get'])
     def shift_list(self, request):
         """
         Эндпоинт для получения списка переведенных в другое окно талонов
@@ -440,3 +450,49 @@ class OperatorViewSet(viewsets.ModelViewSet):
 
 
 
+class RegistratorViewSet(viewsets.ViewSet):
+    @action(detail=True, methods=['get'])
+    def get_today_tickets(self, request, pk=None):
+        """
+        Эндпоинт для регистратора
+        Получение всех выданных талонов на сегодняшний день
+        Нужно передать ID филиала
+        """
+        if not pk:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            branch = Branch.objects.get(pk=pk)
+        except Branch.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        today = timezone.now().date()
+
+        tickets = Customer.objects.filter(queue__branch=branch, created_at__date=today)
+
+        serializer = CustomerSerializer(tickets, many=True)
+        return Response(serializer.data)
+    
+
+    @action(detail=True, methods=['patch'])
+    @swagger_auto_schema(
+    request_body=ChangeNotes)
+    def write_info(self, request, pk=None):
+        """
+        Эндпоинт для внесения доп. сведений о талоне(посетителе)
+        Нужно передать ID талона и в json передать notes: "инфо"
+        """
+        if not pk:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            customer = Customer.objects.get(pk=pk)
+        except Customer.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        notes = request.data.get('notes')
+        customer.notes = notes
+        customer.save()
+        
+        return Response(status=status.HTTP_200_OK)
+        
