@@ -22,7 +22,8 @@ class Profile(models.Model):
     CHOISES = [
         ('guest', 'Гость'),
         ('operator', 'Оператор'),
-        ('admin', 'Admin')
+        ('admin', 'Admin'),
+        ('registrator', 'Регистратор')
     ]
 
     position = models.CharField(max_length=20, choices=CHOISES, default='guest') # Должность
