@@ -426,7 +426,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         if customer.served_start is None or customer.operator != self.request.user:
             return Response({'message': 'Вы не обслуживаете этот талон!'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not customer.is_served:
+        if customer.is_served == False:
             return Response({'message': 'Талон уже отменен.'})
             
         customer.is_served = False
@@ -445,6 +445,15 @@ class OperatorViewSet(viewsets.ModelViewSet):
                 waiting_customer.save()
 
         return Response({'message': 'Талон отменен.'})
+
+    @action(detail=False, methods=['get'])
+    def get_cancelled_customers(self, request):
+        operator = self.request.user
+
+        customers = Customer.objects.filter(created_at__date=date.today(), operator=operator, is_served=False)
+        print(customers)
+        serializer = CustomerSerializer(customers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
