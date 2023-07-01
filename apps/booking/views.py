@@ -1,6 +1,9 @@
 from datetime import date
 from datetime import datetime
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 from django.utils import timezone
 from django.db.models import Max
 from rest_framework import viewsets, status
@@ -166,6 +169,15 @@ class BookingViewSet(viewsets.ModelViewSet):
         customer_id = customer.id # Получение идентификатора печатного талона
 
         redirect_url = config("BASE_URL")+reverse('printing-detail', args=[customer_id]) # Формирование URL для печати талона
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {}  # Передаем пустой объект в качестве аргумента event
+            }
+        )
 
 
         return Response({'message': 'Талон успешно выдан!', 'customer_id': customer_id, 'redirect_url': redirect_url}, status=200)
