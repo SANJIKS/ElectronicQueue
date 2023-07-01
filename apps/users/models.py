@@ -20,13 +20,13 @@ class Profile(models.Model):
     banned = models.BooleanField(default=False) # Флаг, указывающий, заблокирован ли пользователь
 
     CHOISES = [
-        ('guest', 'Гость'),
+        # ('guest', 'Гость'),
         ('operator', 'Оператор'),
         ('admin', 'Admin'),
         ('registrator', 'Регистратор')
     ]
 
-    position = models.CharField(max_length=20, choices=CHOISES, default='guest') # Должность
+    position = models.CharField(max_length=20, choices=CHOISES, default='operator') # Должность
 
 
     def __str__(self):
@@ -38,7 +38,7 @@ class Profile(models.Model):
 def activate_user_handler(sender, user, request, **kwargs):
     if user.email.endswith('@rsk.com'):
         profile, created = Profile.objects.get_or_create(user=user)
-        profile.position = 'operator'
+        profile.position = 'admin'
         profile.save()
 
 @receiver(user_registered)

@@ -94,7 +94,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer  
         fields = '__all__'  
-        read_only_fields = ('user','time', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
+        read_only_fields = ('time', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
         list_serializer_class = CustomerListSerializer
 
     def to_representation(self, instance):
@@ -113,17 +113,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         representation['minutes_in_queue'] = total_minutes
         representation['queue'] = queue.name
 
-        user_id = representation['user']
-        user = User.objects.get(id=user_id)
-        username = user.username
-        first_name = user.profile.first_name
-        last_name = user.profile.last_name
-        surname = user.profile.surname
 
-        representation['user'] = username
-        representation['first_name'] = first_name
-        representation['last_name'] = last_name
-        representation['surname'] = surname
         try:
             representation['branch'] = instance.window.branch.name
         except:
@@ -135,7 +125,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         ticket_number = self.get_ticket_number(queue)
 
         validated_data['ticket_number'] = ticket_number
-        validated_data['user'] = self.context['request'].user
+        # validated_data['user'] = self.context['request'].user
 
         category = validated_data.get('category')
         if category != 'regular':

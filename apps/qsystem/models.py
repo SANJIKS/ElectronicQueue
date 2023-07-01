@@ -44,8 +44,13 @@ class Queue(models.Model):
 #Модель Талона
 class Customer(models.Model):
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='customers')  # Внешний ключ для связи с моделью очереди
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customers_at_user')  # Внешний ключ для связи с моделью пользователей
+    # user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customers_at_user')  # Внешний ключ для связи с моделью пользователей
     ticket_number = models.CharField(max_length=10)  # Поле для хранения номера талона
+    first_name = models.CharField(max_length=50, null=True, blank=True)
+    last_name = models.CharField(max_length=50, null=True, blank=True)
+    surname = models.CharField(max_length=50, null=True, blank=True)
+    pasport = models.CharField(max_length=40, null=True, blank=True)
+    phone_number = models.CharField(max_length=100, null=True, blank=True)
     position = models.IntegerField(null=True, blank=True) # Поле для хранения позиции в очереди
     created_at = models.DateTimeField(auto_now_add=True)  # Поле для хранения даты и времени создания
     is_served = models.BooleanField(default=None, null=True)  # Поле для хранения статуса обслуживания
