@@ -43,8 +43,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         time = serializer.validated_data.get('time')  # Извлечение времени из валидированных данных
         date_ = serializer.validated_data.get('date')  # Извлечение даты из валидированных данных
         queue = serializer.validated_data.get('queue')  # Извлечение очереди из валидированных данных
+        first_name = serializer.validated_data.get('first_name')
+        last_name = serializer.validated_data.get('last_name')
+        surname = serializer.validated_data.get('surname')
 
-        user_bookings = Booking.objects.filter(user=request.user, date=date_).exists() # Проверка наличия бронирований пользователя на выбранную дату
+        user_bookings = Booking.objects.filter(first_name=first_name, last_name=last_name, surname=surname, date=date_).exists() # Проверка наличия бронирований пользователя на выбранную дату
 
         branch = queue.branch # Получение филиала из очереди
         if time < branch.schedule_start or time > branch.schedule_end: # Проверка, что выбранное время находится в рабочем расписании филиала
@@ -74,9 +77,9 @@ class BookingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        user = self.request.user
-        if user.profile.first_name == None or user.profile.last_name == None or user.profile.surname == None: # Проверка, что у пользователя заполнены данные в профиле
-            return Response({'error': 'Заполните данные своего профиля!'}, status=400)
+        # user = self.request.user
+        # if user.profile.first_name == None or user.profile.last_name == None or user.profile.surname == None: # Проверка, что у пользователя заполнены данные в профиле
+        #     return Response({'error': 'Заполните данные своего профиля!'}, status=400)
         
         
         self.perform_create(serializer)
@@ -104,9 +107,9 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         matching_booking = Booking.objects.filter(
         pin=pin,
-        user__profile__first_name=first_name,
-        user__profile__last_name=last_name,
-        user__profile__surname=surname
+        first_name=first_name,
+        last_name=last_name,
+        surname=surname
         ).first()  # Поиск бронирования, соответствующего переданным данным
         
         if not matching_booking: # Если бронирование не найдено
@@ -143,10 +146,15 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         customer = Customer.objects.create(
             queue=matching_booking.queue,
-            user=matching_booking.user,
+            # user=matching_booking.user,
             time=matching_booking.time,
             category='booked',
             ticket_number=ticket_number,
+            first_name=first_name,
+            last_name=last_name,
+            surname=surname,
+            pasport=matching_booking.pasport,
+            phone_number=matching_booking.phone_number,
             position=0
         ) # Создание объекта Customer 
 
