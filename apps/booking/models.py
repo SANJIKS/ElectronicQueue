@@ -21,7 +21,7 @@ class Booking(models.Model):
     is_registered = models.BooleanField(default=False) # Флаг, указывающий, распечатан ли талон
 
     def __str__(self):
-        return f"{self.queue} - {self.user}"
+        return f"{self.queue} - {self.first_name} {self.last_name} {self.surname}"
     
     class Meta:
         verbose_name = 'Запись'

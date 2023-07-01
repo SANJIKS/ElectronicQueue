@@ -75,7 +75,7 @@ class Customer(models.Model):
     time = models.TimeField(null=True, blank=True) # Время предварительной записи
 
     def __str__(self):
-        return f"Customer {self.user.username} - Queue: {self.queue} - {self.ticket_number}" 
+        return f"Customer {self.first_name} {self.last_name} - Queue: {self.queue} - {self.ticket_number}" 
     
     class Meta:
         verbose_name = 'Талон'  
@@ -89,7 +89,7 @@ class Waiting_List(models.Model):
     created_at = models.DateTimeField(auto_now_add=True) # Дата создания
 
     def __str__(self):
-        return self.customer.user
+        return self.customer.ticket_number
     
     class Meta:
         verbose_name = 'Лист ожидания'  
