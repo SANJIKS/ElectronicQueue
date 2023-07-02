@@ -77,9 +77,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         a = self.action
-        if a in ['create', 'user_history', 'get_documents']: 
-            return [permissions.IsAuthenticated()]  
-        elif a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
+        if a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
             return [IsOperator()]
         elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
             return [IsOperator(), IsOperatorOfCustomer()]
