@@ -24,8 +24,8 @@ class Queue(models.Model):
     name = models.CharField(max_length=100)  # Поле для хранения имени очереди
     branch = models.ForeignKey(Branch, default=1, related_name='queues', on_delete=models.CASCADE) # Филиал
     description = models.CharField(max_length=200, blank=True, null=True) # Поле для хранения описания очереди
-    documents = models.CharField(max_length=500, null=True, blank=True) # Документы
-    optional_documents = models.CharField(max_length=500, null=True, blank=True) # Необязательные документы
+    documents = models.TextField(null=True, blank=True) # Документы
+    optional_documents = models.TextField(null=True, blank=True) # Необязательные документы
     average_waiting_time = models.PositiveIntegerField(default=0)  # Поле для хранения среднего времени ожидания
     max_waiting_time = models.PositiveIntegerField(default=30) # Поле для хранения максимального времени ожидания
     operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)

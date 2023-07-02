@@ -12,6 +12,9 @@ from decouple import config
 from django.db.models import Max
 from django.utils.text import slugify
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 from .permissions import IsOperator, IsOperatorOfCustomer
 
 
@@ -74,9 +77,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         a = self.action
-        if a in ['create', 'user_history', 'get_documents']: 
-            return [permissions.IsAuthenticated()]  
-        elif a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
+        if a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
             return [IsOperator()]
         elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
             return [IsOperator(), IsOperatorOfCustomer()]
@@ -101,7 +102,19 @@ class CustomerViewSet(viewsets.ModelViewSet):
         redirect_url = config("BASE_URL")+reverse('printing-detail', args=[customer_id])  # 'printing-detail' - имя URL-маршрута, customer_id - аргумент
 
         headers = self.get_success_headers(serializer.data)
-        return Response({'customer_id': customer_id, 'redirect_url': redirect_url}, status=201, headers=headers)
+        response = Response({'customer_id': customer_id, 'redirect_url': redirect_url}, status=201, headers=headers)
+
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        return response
 
 
 
