@@ -17,9 +17,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
-from .permissions import IsOperatorOnline
+from .permissions import IsOperatorOnline, OperatorIsNotBusy
 from .models import Profile
-from .serializers import ChangeNotes, GetWindowsSerializer, ProfileSerializer
+from .serializers import ChangeNotes, GetByProps, GetWindowsSerializer, ProfileSerializer
 from apps.qsystem.models import Customer, Waiting_List
 from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerializer, WaitingListSerializer, ShiftWindow
 from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
@@ -88,7 +88,9 @@ class OperatorViewSet(viewsets.ModelViewSet):
         a = self.action
         if a == 'change_status':
             return [IsOperatorOnline()]
-        elif a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
+        elif a == 'start':
+            return [OperatorIsNotBusy]
+        elif a in ['get_customers_in_queue', 'get_waiting_list', 'shift_list', 'call', 'move_to_the_end']:
             return [IsOperator()]
         elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
             return [IsOperator(), IsOperatorOfCustomer()]
@@ -188,6 +190,10 @@ class OperatorViewSet(viewsets.ModelViewSet):
         customer.served_start = timezone.now()
         customer.window = self.request.user.window
         customer.save()
+
+        window = self.request.user.window
+        window.is_busy = True
+        window.save()
         serializer = CustomerSerializer(customer)
         return Response(serializer.data)
     
@@ -446,6 +452,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
 
         return Response({'message': 'Талон отменен.'})
 
+
     @action(detail=False, methods=['get'])
     def get_cancelled_customers(self, request):
         operator = self.request.user
@@ -454,7 +461,6 @@ class OperatorViewSet(viewsets.ModelViewSet):
         print(customers)
         serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 
@@ -504,4 +510,56 @@ class RegistratorViewSet(viewsets.ViewSet):
         customer.save()
         
         return Response(status=status.HTTP_200_OK)
+
+    
+    @action(detail=False, methods=['post'])
+    @swagger_auto_schema(
+    request_body=GetByProps)
+    def customer_by_props(self, request):
+        """
+        Эндпоинт для поиска талонов по различным реквизитам
+        """
+        filters = {}
+        if 'first_name' in request.data and request.data['first_name'] != "":
+            filters['first_name'] = request.data['first_name']
+        if 'last_name' in request.data and request.data['last_name'] != "":
+            filters['last_name'] = request.data['last_name']
+        if 'surname' in request.data and request.data['surname'] != "":
+            filters['surname'] = request.data['surname']
+        if 'phone' in request.data and request.data['phone'] != "":
+            filters['phone_number'] = request.data['phone']
+        if 'pasport' in request.data and request.data['pasport'] != "":
+            filters['pasport'] = request.data['pasport']
         
+        customers = Customer.objects.filter(**filters)
+
+        serializer = CustomerSerializer(customers, many=True)
+
+        return Response(serializer.data, status=200)
+    
+
+    @action(detail=True, methods=['post'])
+    def mark_as_cancelled(self, request, pk=None):
+        """
+        Эндпоинт для обновления статуса обслуживания талона как "Отменен"
+        Для регистратора
+        """
+        customer = Customer.objects.get(pk=pk)
+
+        if customer.is_served == False:
+            return Response({'message': 'Талон уже отменен.'})
+            
+        customer.is_served = False
+        customer.position = 0
+        customer.save()
+
+        queue = customer.queue
+
+        current_position = customer.position
+        waiting_customers = Customer.objects.filter(queue=queue, is_served=None).order_by('position')
+        for waiting_customer in waiting_customers:
+            if waiting_customer.position is not None and waiting_customer.position > current_position:
+                waiting_customer.position -= 1
+                waiting_customer.save()
+
+        return Response({'message': 'Талон отменен.'})

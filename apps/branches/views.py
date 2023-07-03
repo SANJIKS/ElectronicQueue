@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 
-from .serializers import RegionSerializer, BranchSerializer
-from .models import Region, Branch, Window
+from .serializers import CalendarSerializer, RegionSerializer, BranchSerializer, WindowSerializer
+from .models import Region, Branch, Window, Calendar
 from apps.qsystem.models import Queue, Services
 from apps.qsystem.serializers import QueueSerializer
 
@@ -77,3 +77,13 @@ class ServiceQueueAPIView(APIView):
         serializer = QueueSerializer(queues, many=True)  # Сериализация списка очередей
 
         return Response(serializer.data, status=200)
+
+
+class WindowViewSet(ModelViewSet):
+    queryset = Window.objects.all()
+    serializer_class = WindowSerializer
+
+
+class CalendarViewSet(ModelViewSet):
+    queryset = Calendar.objects.all()
+    serializer_class = CalendarSerializer

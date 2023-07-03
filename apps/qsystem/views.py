@@ -15,22 +15,18 @@ from django.utils.text import slugify
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-from .permissions import IsOperator, IsOperatorOfCustomer
+from .permissions import IsOperator, IsOperatorOfCustomer, IsAdmin
 
 
 from .models import Queue, Customer, Waiting_List
 from .serializers import GetQueueCustomersSerializer, QueueSerializer, CustomerSerializer, ShiftWindow, WaitingListSerializer
-from apps.branches.models import Window
+from apps.branches.models import Window, Calendar
 
 
 class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all()
     serializer_class = QueueSerializer
-
-    def get_permissions(self):
-        if self.action == 'create' and not self.request.user.is_superuser:
-            return [permissions.IsAdminUser()]
-        return super().get_permissions()
+    permission_classes = [IsAdmin()]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -93,6 +89,16 @@ class CustomerViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        current_time = datetime.now().date()  # Текущее времени
+        queue = serializer.validated_data.get('queue')
+        branch = queue.branch
+
+        holiday = Calendar.objects.filter(branch=branch, date=current_time)
+        if holiday.exists():
+            return Response({'error': 'В этот день филиал не работет!'}, status=400)
+
+
         self.perform_create(serializer)
 
         # Получение ID созданного объекта Customer
@@ -164,7 +170,7 @@ class PrintingView(viewsets.ViewSet):
             'Тип услуги': customer.queue.services.name, 
             'Позиция': customer.position,
             'Выдано': customer.created_at,  
-            'Имя посетителя': customer.user.username,
+            'Имя посетителя': f'{customer.first_name} {customer.last_name} {customer.surname}',
             'Статус': customer.is_served, 
             'Наименование организации': 'RSK',
             'Филиал': customer.queue.branch.street,
