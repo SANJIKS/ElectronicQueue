@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'celery',
     'django_celery_beat',
+    'django_redis',
+    'redis',
     
     #my apps
     'apps.qsystem',
@@ -96,10 +98,10 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE'),
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('POSTGRES_DB'),
+        'USER': config('POSTGRES_USER'),
+        'PASSWORD': config('POSTGRES_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT'),
     },
@@ -252,4 +254,5 @@ LOGGING = {
 }
 
 
-
+CELERY_BROKER_URL = "redis://redis:6379"
+CELERY_RESULT_BACKEND = "redis://redis:6379"
