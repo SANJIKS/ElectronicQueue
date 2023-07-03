@@ -8,6 +8,14 @@ from .models import Profile
 from apps.branches.models import Window
 from apps.qsystem.models import Customer
 
+class GetByProps(serializers.Serializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    surname = serializers.CharField()
+    phone = serializers.CharField()
+    pasport = serializers.CharField()
+    
+
 class ChangeNotes(serializers.Serializer):
     notes = serializers.CharField()
 

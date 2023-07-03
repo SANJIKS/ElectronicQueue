@@ -68,3 +68,9 @@ class Window(models.Model):
     class Meta:
         verbose_name = 'Окно'
         verbose_name_plural = "Окна"
+
+
+class Calendar(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    holiday = models.CharField(max_length=100)
+    date = models.DateField()

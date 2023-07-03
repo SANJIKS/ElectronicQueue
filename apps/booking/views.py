@@ -19,6 +19,7 @@ User = get_user_model()
 from apps.qsystem.models import Customer
 from .models import Booking
 from .serializers import BookingSerializer, RegisterCustomerSerializer
+from apps.branches.models import Calendar
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -50,9 +51,15 @@ class BookingViewSet(viewsets.ModelViewSet):
         last_name = serializer.validated_data.get('last_name')
         surname = serializer.validated_data.get('surname')
 
+        branch = queue.branch
+
+        holiday = Calendar.objects.filter(branch=branch, date=date_)
+        if holiday.exists():
+            return Response({'error': 'В этот день филиал не работает!'}, status=400)
+
+
         user_bookings = Booking.objects.filter(first_name=first_name, last_name=last_name, surname=surname, date=date_).exists() # Проверка наличия бронирований пользователя на выбранную дату
 
-        branch = queue.branch # Получение филиала из очереди
         if time < branch.schedule_start or time > branch.schedule_end: # Проверка, что выбранное время находится в рабочем расписании филиала
             return Response(
                 {'error': 'Филиал не работает в это время.'},
