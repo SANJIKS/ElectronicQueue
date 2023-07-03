@@ -91,7 +91,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         if a == 'change_status':
             return [IsOperatorOnline()]
         elif a == 'start':
-            return [OperatorIsNotBusy]
+            return [OperatorIsNotBusy()]
         elif a in ['get_customers_in_queue', 'get_waiting_list', 'shift_list', 'call', 'move_to_the_end']:
             return [IsOperator()]
         elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
