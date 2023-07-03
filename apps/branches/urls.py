@@ -1,12 +1,13 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import RegionViewSet, BranchViewSet, ServiceQueueAPIView, WindowViewSet, CalendarViewSet
+from .views import RegionViewSet, BranchViewSet, ServiceQueueAPIView, WindowViewSet, CalendarViewSet, BaseCalendarViewSet
 
 router = routers.DefaultRouter()
 router.register('region', RegionViewSet)
 router.register('', BranchViewSet)
 router.register('window', WindowViewSet)
 router.register('calendar', CalendarViewSet)
+router.register('basecalendar', BaseCalendarViewSet)
 
 urlpatterns = [
     path('branches/', include(router.urls)),

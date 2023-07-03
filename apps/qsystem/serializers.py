@@ -11,7 +11,6 @@ from .models import Queue, Customer, Waiting_List
 
 User = get_user_model()
 
-
 #Сериализатор для передачи талона в другое окно
 class ShiftWindow(serializers.Serializer):
     window = serializers.CharField()

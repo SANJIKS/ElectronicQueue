@@ -32,6 +32,7 @@ urlpatterns = [
     path('', include('apps.qsystem.urls')),
     path('', include('apps.branches.urls')),
     path('booking/', include('apps.booking.urls')),
+    path('admins/', include('apps.admins.urls')),
 ]
 
 if settings.DEBUG:

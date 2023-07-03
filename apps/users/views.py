@@ -25,6 +25,8 @@ from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerial
 from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
 from apps.branches.models import Branch, Window
 
+from .tasks import cancel_ticket
+
 
 class ProfileView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -205,8 +207,10 @@ class OperatorViewSet(viewsets.ModelViewSet):
         Если посетитель не подходит 5-й раз, его талон отменяется
         """
         customer = Customer.objects.get(pk=pk)
+
+        cancel_ticket.apply_async(args=[customer.id], countdown=120)
         
-        if customer.number_of_calls == 5:
+        if customer.number_of_calls == customer.queue.max_calls:
             customer.is_served = False
             current_position = customer.position
             customer.position = 0

@@ -1,6 +1,5 @@
-run:
-	python3 manage.py runserver
+run_dev:
+	docker-compose -f docker-compose-dev.yml up -d
 
-migrate:
-	python3 manage.py makemigrations
-	python3 manage.py migrate
+run_prod:
+	docker-compose -f docker-compose-prod.yml up -d

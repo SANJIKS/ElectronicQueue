@@ -74,3 +74,8 @@ class Calendar(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     holiday = models.CharField(max_length=100)
     date = models.DateField()
+
+
+class BaseCalendar(models.Model):
+    holiday = models.CharField(max_length=100)
+    date = models.DateField()

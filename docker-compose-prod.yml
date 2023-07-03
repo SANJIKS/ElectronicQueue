@@ -1,0 +1,58 @@
+version: '3.3'
+
+services:
+  db:
+    image: postgres:14.7
+    env_file:
+      - .env
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - db:/app/db
+    ports:
+      - "8000:8000"
+    command: gunicorn --access-logfile - --workers 3 --bind 0.0.0.0:8000 core.wsgi:application
+
+  redis:
+    image: redis:alpine
+    expose:
+      - 6379
+
+  celery:
+    build:
+      context: .
+    env_file:
+      - .env
+    command: >
+      sh -c 'celery -A core worker -l info'
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - api
+
+  nginx:
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    env_file:
+      - .env
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+
+volumes:
+  static_volume:
+  media_volume:
+  db:
