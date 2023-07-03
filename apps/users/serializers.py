@@ -8,6 +8,7 @@ from .models import Profile
 from apps.branches.models import Window
 from apps.qsystem.models import Customer
 
+
 class GetByProps(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()

@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 
-from .serializers import CalendarSerializer, RegionSerializer, BranchSerializer, WindowSerializer
-from .models import Region, Branch, Window, Calendar
+from .serializers import BaseCalendarSerializer, CalendarSerializer, RegionSerializer, BranchSerializer, WindowSerializer
+from .models import BaseCalendar, Region, Branch, Window, Calendar
 from apps.qsystem.models import Queue, Services
 from apps.qsystem.serializers import QueueSerializer
 
@@ -87,3 +87,8 @@ class WindowViewSet(ModelViewSet):
 class CalendarViewSet(ModelViewSet):
     queryset = Calendar.objects.all()
     serializer_class = CalendarSerializer
+
+
+class BaseCalendarViewSet(ModelViewSet):
+    queryset = BaseCalendar.objects.all()
+    serializer_class = BaseCalendarSerializer

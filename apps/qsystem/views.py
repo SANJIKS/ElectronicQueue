@@ -14,19 +14,25 @@ from django.utils.text import slugify
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from drf_yasg.utils import swagger_auto_schema
 
 from .permissions import IsOperator, IsOperatorOfCustomer, IsAdmin
 
 
 from .models import Queue, Customer, Waiting_List
 from .serializers import GetQueueCustomersSerializer, QueueSerializer, CustomerSerializer, ShiftWindow, WaitingListSerializer
-from apps.branches.models import Window, Calendar
+from apps.branches.models import BaseCalendar, Window, Calendar
 
 
 class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all()
     serializer_class = QueueSerializer
-    permission_classes = [IsAdmin()]
+    
+    def get_permissions(self):
+        if self.action == 'get_documents':
+            return [permissions.AllowAny()]
+        else:
+            return [IsAdmin()]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -94,9 +100,17 @@ class CustomerViewSet(viewsets.ModelViewSet):
         queue = serializer.validated_data.get('queue')
         branch = queue.branch
 
+        if queue.is_blocked == True:
+            return Response({'error': 'В данный момент очередь недоступна!'}, status=400)
+
+        base_holiday = BaseCalendar.objects.filter(date=current_time)
+        if base_holiday.exists():
+            return Response({'error': 'В этот день филиалы не работают!'})
+        
         holiday = Calendar.objects.filter(branch=branch, date=current_time)
         if holiday.exists():
             return Response({'error': 'В этот день филиал не работет!'}, status=400)
+        
 
 
         self.perform_create(serializer)
@@ -136,9 +150,14 @@ class PrintingView(viewsets.ViewSet):
         start_time = queue.branch.schedule_start  # Задание начала рабочего дня
         end_time = queue.branch.schedule_end  # Задание конца рабочего дня
 
+        print_start = queue.print_start
+        print_end = queue.print_end
+
         if not (start_time <= current_time <= end_time):  # Проверка на рабочее время
             return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)  # Возврат ошибки 403
 
+        if not (print_start <= current_time <= print_end): 
+            return Response({'error': 'Печать талонов недоступна в данный момент'}, status=403)
 
         if customer.is_served is not None:
             return Response({'error': 'Невозможно распечатать талон, т.к. он уже обслужен'}, status=403)

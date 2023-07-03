@@ -206,7 +206,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         """
         customer = Customer.objects.get(pk=pk)
         
-        if customer.number_of_calls == 5:
+        if customer.number_of_calls == customer.queue.max_calls:
             customer.is_served = False
             current_position = customer.position
             customer.position = 0

@@ -31,7 +31,10 @@ class Queue(models.Model):
     operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)
     symbol = models.CharField(max_length=2, null=True, blank=True) # Символ очереди
     services = models.ForeignKey(Services, on_delete=models.CASCADE, related_name='queues', null=True, blank=True) # Тип услуги
-
+    max_calls = models.PositiveSmallIntegerField(default=3)
+    print_start = models.TimeField(default="9:00") 
+    print_end = models.TimeField(default="20:00")
+    is_blocked = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.name}-{self.branch.name}'  
