@@ -84,7 +84,8 @@ class CustomerListSerializer(serializers.ListSerializer):
             'queue': item.queue.name,
             'waiting_time': generate_in_queue_time(item),
             'category': item.category,
-            'position': item.position
+            'position': item.position,
+            'is_served': item.is_served
         } for item in iterable]
 
 
