@@ -258,6 +258,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
 
         customer.window = None
         customer.operator.window.is_busy = False
+        customer.operator.window.save()
         customer.operator = None
         customer.served_start = None
         customer.save()
@@ -397,6 +398,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         customer.served_at = timezone.now()
         customer.position = 0
         customer.operator.window.is_busy = False
+        customer.operator.window.save()
         customer.save()
 
         queue = customer.queue
@@ -442,6 +444,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         customer.is_served = False
         customer.position = 0
         customer.operator.window.is_busy = False
+        customer.operator.window.save()
         customer.save()
 
         queue = customer.queue
