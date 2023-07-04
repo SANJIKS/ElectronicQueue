@@ -55,6 +55,7 @@ class QueueViewSet(viewsets.ModelViewSet):
 
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
+    queryset = Customer.objects.filter(created_at__date=date.today()).order_by('created_at')
 
     def get_serializer_class(self):
         if self.action == 'change_status' or self.action == 'mark_as_cancelled' or self.action == 'mark_as_served' or self.action == 'start':
@@ -63,18 +64,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
             return ShiftWindow
         else:    
             return super().get_serializer_class()
-
-
-    def get_queryset(self):
-        queryset = Customer.objects.filter(created_at__date=date.today()) 
-
-        if self.action == 'get_customers_in_queue':
-            queryset = queryset.order_by('position')
-        else:
-            queryset = queryset.order_by('created_at')
-
-        return queryset
-
 
 
     def get_permissions(self):

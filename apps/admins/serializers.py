@@ -6,3 +6,10 @@ class ChangeMaxCalls(serializers.Serializer):
 class ChangePrintTime(serializers.Serializer):
     start = serializers.TimeField()
     end = serializers.TimeField()
+
+class ChangeWaitingTime(serializers.Serializer):
+    time = serializers.IntegerField()
+
+
+class ChangeMaxTransfers(serializers.Serializer):
+    number = serializers.IntegerField()

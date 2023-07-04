@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.qsystem.models import Queue
-from .serializers import ChangeMaxCalls, ChangePrintTime
+from .serializers import ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime
 
 
 
@@ -23,7 +23,7 @@ class AdminViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['post'])
     @swagger_auto_schema(request_body=ChangePrintTime)
-    def change_printint_time(self, request, *args, **kwargs):
+    def change_printing_time(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         queue = Queue.objects.get(pk=pk)
         start = request.data.get('start')
@@ -45,3 +45,54 @@ class AdminViewSet(viewsets.ViewSet):
         queue.save()
         return Response({'message': 'Очередь заблокирована'}, status=200)
     
+
+    @swagger_auto_schema(request_body=ChangeWaitingTime)
+    @action(detail=True, methods=['post'])
+    def change_operator_waiting_time(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        queue = Queue.objects.get(pk=pk)
+        time = request.data.get('time')
+        queue.waiting_time_operator = time
+        queue.save()
+        return Response({'message': 'Время изменено'}, status=200)
+    
+
+    @swagger_auto_schema(request_body=ChangeMaxTransfers)
+    @action(detail=True, methods=['post'])
+    def change_max_transfers(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        queue = Queue.objects.get(pk=pk)
+        number = request.data.get('number')
+        queue.max_calls = number
+        queue.save()
+        return Response({'message': 'Максимальное количество вызовов изменено!'})
+    
+
+    @action(detail=True, methods=['post'])
+    def change_auto_transfer(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        queue = Queue.objects.get(pk=pk)
+        if queue.auto_transfer:
+            queue.auto_transfer = False
+            queue.save()
+            return Response({'message': 'Автоматический перенос в конец очереди отключен'})
+        queue.auto_transfer = True
+        queue.save()
+        return Response({'message': 'Автоматический перенос в конец очереди включен'})
+    
+
+
+from rest_framework.views import APIView
+from django.conf import settings
+
+class TCPConfigView(APIView):
+    def get(self, request):
+        return Response({"tcp_port": settings.TCP_PORT})
+
+    def put(self, request):
+        tcp_port = request.data.get("tcp_port")
+        if tcp_port:
+            settings.TCP_PORT = tcp_port
+            return Response({"message": "TCP port updated successfully."})
+        else:
+            return Response({"error": "TCP port not provided."}, status=400)
