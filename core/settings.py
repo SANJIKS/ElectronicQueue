@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'celery',
     'django_celery_beat',
-    'django_redis',
     'redis',
     
     #my apps
@@ -254,5 +253,8 @@ LOGGING = {
 }
 
 
-CELERY_BROKER_URL = "redis://redis:6379"
-CELERY_RESULT_BACKEND = "redis://redis:6379"
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
+
+
+TCP_PORT = 8000

@@ -1,3 +1,6 @@
+from datetime import datetime
+from pytz import timezone as timez
+
 from celery import shared_task
 from django.utils import timezone
 from apps.qsystem.models import Customer
@@ -7,18 +10,35 @@ from apps.qsystem.models import Customer
 def cancel_ticket(customer_id):
     try:
         customer = Customer.objects.get(id=customer_id)
-        # Проверяем, что талон еще не обслуживается
         if customer.operator:
             return
-        if (timezone.now() - customer.served_start).total_seconds() >= 120:
+        
+        queue = customer.queue
+        if customer.number_of_calls == queue.max_calls:
+            current_position = customer.position
             customer.is_served = False
-            customer.position = 0
             customer.save()
-            queue = customer.queue
-            other_customers = queue.customers.exclude(pk=customer.id)
+            
+            today = datetime.now().astimezone(timez('Asia/Bishkek'))
+            other_customers = Customer.objects.filter(queue=queue, created_at__date=today, position__gt=current_position).exclude(pk=customer_id)
+
             for other_customer in other_customers:
-                if other_customer.position > customer.position:
+                if other_customer.position > current_position:
+                    other_customer.position -= 1
+                    other_customer.save()     
+        else:    
+            current_position = customer.position
+            customer.position = queue.customers.count() + 1
+            customer.save()
+
+            today = datetime.now().astimezone(timez('Asia/Bishkek'))
+            other_customers = Customer.objects.filter(queue=queue, created_at__date=today, position__gt=current_position).exclude(pk=customer_id)
+            
+            for other_customer in other_customers:
+                if other_customer.position > current_position:
                     other_customer.position -= 1
                     other_customer.save()
+
     except Customer.DoesNotExist:
         pass
+

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from pytz import timezone
+from pytz import timezone 
 
 from rest_framework import serializers
 from django.db import models
@@ -10,6 +10,8 @@ from .models import Queue, Customer, Waiting_List
 
 
 User = get_user_model()
+
+today = datetime.now().astimezone(timezone('Asia/Bishkek'))
 
 #Сериализатор для передачи талона в другое окно
 class ShiftWindow(serializers.Serializer):
@@ -139,8 +141,8 @@ class CustomerSerializer(serializers.ModelSerializer):
             validated_data['position'] = last_position + 1
         else:
             validated_data['position'] = 1
-
-        other_customers = Customer.objects.filter(queue=queue, position__gt=validated_data['position'] - 1)
+        
+        other_customers = Customer.objects.filter(queue=queue, position__gt=validated_data['position'] - 1, created_at__date=today)
         for other_customer in other_customers:
             other_customer.position += 1
             other_customer.save()
@@ -155,7 +157,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         if queue is None:
             return ""
 
-        max_ticket_number = Customer.objects.filter(queue=queue).aggregate(Max('ticket_number'))
+        max_ticket_number = Customer.objects.filter(queue=queue, created_at__date=today).aggregate(Max('ticket_number'))
         last_ticket_number = max_ticket_number.get('ticket_number__max')
 
         if last_ticket_number is not None:

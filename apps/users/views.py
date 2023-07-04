@@ -92,9 +92,9 @@ class OperatorViewSet(viewsets.ModelViewSet):
             return [IsOperatorOnline()]
         elif a == 'start':
             return [OperatorIsNotBusy()]
-        elif a in ['get_customers_in_queue', 'get_waiting_list', 'shift_list', 'call', 'move_to_the_end']:
+        elif a in ['get_customers_in_queue', 'get_waiting_list', 'shift_list', 'call', 'move_to_the_end',  'mark_as_cancelled']:
             return [IsOperator()]
-        elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
+        elif a in ['mark_as_served', 'shift_window']:
             return [IsOperator(), IsOperatorOfCustomer()]
         return super().get_permissions()
     
@@ -143,7 +143,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Сотрудник не привязан к очереди'}, status=404)
 
 
-        queryset = Customer.objects.filter(queue__in=queue, is_served__isnull=True)  # Получение первого пользователя в очереди
+        queryset = Customer.objects.filter(queue__in=queue, is_served__isnull=True)  
 
         today = datetime.now().astimezone(timez('Asia/Bishkek'))
         start_of_day = datetime.combine(today.date(), time.min).astimezone(timez('Asia/Bishkek'))
@@ -156,7 +156,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
                 default=Value(True),
                 output_field=BooleanField()
             )
-        ).order_by('-is_regular', 'position')
+        ).order_by('position')
 
         serializer = GetQueueCustomersSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -207,29 +207,15 @@ class OperatorViewSet(viewsets.ModelViewSet):
         Если посетитель не подходит 5-й раз, его талон отменяется
         """
         customer = Customer.objects.get(pk=pk)
-
-        cancel_ticket.apply_async(args=[customer.id], countdown=120)
         
-        if customer.number_of_calls == customer.queue.max_calls:
-            customer.is_served = False
-            current_position = customer.position
-            customer.position = 0
-            customer.save()
+        if customer.queue.auto_transfer:
+            cancel_ticket.apply_async(args=[customer.id], countdown=customer.queue.waiting_time_operator)
 
-            queue = customer.queue
-            other_customers = queue.customers.exclude(pk=pk)
-
-            for other_customer in other_customers:
-                if other_customer.position > current_position:
-                    other_customer.position -= 1
-                    other_customer.save()
-
-            return Response({'message': 'Талон посетителя закрыт!'})
         
         customer.number_of_calls += 1
         customer.save()
 
-        return Response({'message': f'{customer.ticket_number}-{customer.user.profile.first_name}-{customer.user.profile.last_name} IDI SUDA'}, status=200)
+        return Response({'message': f'{customer.ticket_number}-{customer.first_name}-{customer.last_name}, подойдите пожалуйста к {self.request.user.window.number} окну'}, status=200)
 
 
     @action(detail=True, methods=['post'])
@@ -367,7 +353,8 @@ class OperatorViewSet(viewsets.ModelViewSet):
         customer.position = queue.customers.count() + 1
         customer.save()
 
-        other_customers = queue.customers.exclude(pk=pk)
+        today = datetime.now().astimezone(timez('Asia/Bishkek'))
+        other_customers = Customer.objects.filter(queue=queue, created_at__date=today, position__gt=current_position).exclude(pk=pk)
 
         for other_customer in other_customers:
             if other_customer.position > current_position:
@@ -465,7 +452,6 @@ class OperatorViewSet(viewsets.ModelViewSet):
         operator = self.request.user
 
         customers = Customer.objects.filter(created_at__date=date.today(), operator=operator, is_served=False)
-        print(customers)
         serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

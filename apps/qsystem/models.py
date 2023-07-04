@@ -35,6 +35,8 @@ class Queue(models.Model):
     print_start = models.TimeField(default="9:00") 
     print_end = models.TimeField(default="20:00")
     is_blocked = models.BooleanField(default=False)
+    waiting_time_operator = models.PositiveIntegerField(default=120)
+    auto_transfer = models.BooleanField(default=True)
 
     def __str__(self):
         return f'{self.name}-{self.branch.name}'  
