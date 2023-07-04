@@ -2,11 +2,60 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+from djoser.serializers import UserSerializer
 
+from apps.branches.models import Floor, Cabinet
+from apps.branches.serializers import CabinetSerializer, FloorSerializer
+from apps.admins.permissions import IsAdmin
 from apps.qsystem.models import Queue
+from apps.users.models import Profile
+from apps.users.serializers import ProfileSerializer
 from .serializers import ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime
 
+User = get_user_model()
 
+class FloorViewSet(viewsets.ModelViewSet):
+    queryset = Floor.objects.all()
+    serializer_class = FloorSerializer
+    permission_classes = [IsAdmin]
+
+
+class CabinetViewSet(viewsets.ModelViewSet):
+    queryset = Cabinet.objects.all()
+    serializer_class = CabinetSerializer
+    permission_classes = [IsAdmin]
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
+    
+
+class UsersProfileViewSet(viewsets.ViewSet):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
+        profile = Profile.objects.get(user=request.user)
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data)
+    
+    def put(self, request):
+        profile = Profile.objects.get(user=request.user)
+        serializer = ProfileSerializer(profile, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def patch(self, request):
+        profile = Profile.objects.get(user=request.user)
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
 
 class AdminViewSet(viewsets.ViewSet):

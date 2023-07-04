@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import BaseCalendar, Window, Branch, Region, Calendar
+from .models import BaseCalendar, Cabinet, Floor, Window, Branch, Region, Calendar
 
 #Сериализатор для модели Region
 class RegionSerializer(serializers.ModelSerializer):
@@ -33,5 +33,17 @@ class CalendarSerializer(serializers.ModelSerializer):
 class BaseCalendarSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseCalendar
+        fields = '__all__'
+        read_only_fields = ('id',)
+
+class FloorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Floor
+        fields = '__all__'
+        read_only_fields = ('id',)
+
+class CabinetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cabinet
         fields = '__all__'
         read_only_fields = ('id',)

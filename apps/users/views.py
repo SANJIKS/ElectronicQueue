@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
-from .permissions import IsOperatorOnline, OperatorIsNotBusy
+from .permissions import IsOperatorOnline, OperatorIsNotBusy, IsRegistrator
 from .models import Profile
 from .serializers import ChangeNotes, GetByProps, GetWindowsSerializer, ProfileSerializer
 from apps.qsystem.models import Customer, Waiting_List
@@ -56,10 +56,13 @@ class ProfileView(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def user_history(self, request):
         """
-        Эндпоинт для получения истории талонов пользователя
+        Эндпоинт для получения истории талонов
+        Необходимо передать ФИО
         """
-        user = request.user  # Получение текущего пользователя
-        tickets = Customer.objects.filter(user=user)  # Получение всех талонов пользователя
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        surname = request.data.get('surname')
+        tickets = Customer.objects.filter(first_name=first_name, last_name=last_name, surname=surname)  # Получение всех талонов пользователя
 
         serializer = CustomerSerializer(tickets, many=True)  
         return Response(serializer.data)
@@ -459,6 +462,8 @@ class OperatorViewSet(viewsets.ModelViewSet):
 
 
 class RegistratorViewSet(viewsets.ViewSet):
+    permission_classes = [IsRegistrator]
+
     @action(detail=True, methods=['get'])
     def get_today_tickets(self, request, pk=None):
         """

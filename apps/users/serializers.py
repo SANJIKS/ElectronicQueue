@@ -9,6 +9,11 @@ from apps.branches.models import Window
 from apps.qsystem.models import Customer
 
 
+class GetCustomersHistory(serializers.Serializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    surname = serializers.CharField()
+
 class GetByProps(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()

@@ -50,6 +50,16 @@ class Terminal(models.Model):
         verbose_name_plural = 'Терминалы'
 
 
+class Floor(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    number = models.IntegerField()
+
+class Cabinet(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE)
+    number = models.IntegerField()
+
+
 #Модель Окна
 class Window(models.Model):
     number = models.PositiveSmallIntegerField()  # Номер окна
@@ -61,6 +71,8 @@ class Window(models.Model):
     schedule_start = models.IntegerField(default=9)  # Начало рабочего дня окна (часы)
     schedule_end = models.IntegerField(default=18)  # Конец рабочего дня окна (часы)
     is_busy = models.BooleanField(default=False)  # Флаг, указывающий, обслуживает ли оператор клиента
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, null=True, blank=True)
+    cabinet = models.ForeignKey(Cabinet, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f'Окно №{self.number} - {self.branch.name} - {self.operator.username}'
@@ -79,3 +91,4 @@ class Calendar(models.Model):
 class BaseCalendar(models.Model):
     holiday = models.CharField(max_length=100)
     date = models.DateField()
+
