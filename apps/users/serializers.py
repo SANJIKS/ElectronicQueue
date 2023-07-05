@@ -8,6 +8,10 @@ from .models import Profile
 from apps.branches.models import Window
 from apps.qsystem.models import Customer
 
+class GetServedCustomers(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = '__all__'
 
 class GetCustomersHistory(serializers.Serializer):
     first_name = serializers.CharField()

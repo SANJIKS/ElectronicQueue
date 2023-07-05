@@ -22,7 +22,7 @@ from apps.booking.serializers import BookingSerializer
 
 from .permissions import IsOperatorOnline, OperatorIsNotBusy, IsRegistrator
 from .models import Profile
-from .serializers import ChangeNotes, GetByProps, GetWindowsSerializer, ProfileSerializer
+from .serializers import ChangeNotes, GetByProps, GetServedCustomers, GetWindowsSerializer, ProfileSerializer
 from apps.qsystem.models import Customer, Waiting_List
 from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerializer, WaitingListSerializer, ShiftWindow
 from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
@@ -460,7 +460,23 @@ class OperatorViewSet(viewsets.ModelViewSet):
         customers = Customer.objects.filter(created_at__date=date.today(), operator=operator, is_served=False)
         serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
+    @action(detail=False, methods=['get'])
+    def get_served_customers(self, request):
+        operator = self.request.user
+
+        customers = Customer.objects.filter(created_at__date=date.today(), operator=operator, is_served=True)
+        serializer = CustomerSerializer(customers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'])
+    def get_served_customers_all(self, request):
+        operator = self.request.user
+
+        customers = Customer.objects.filter(operator=operator, is_served=True)
+        serializer = GetServedCustomers(customers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
