@@ -19,11 +19,11 @@ services:
       - db:/app/db
       - .:/app
     command: >
-      sh -c 'python manage.py runserver 0.0.0.0:8000'
+      sh -c 'python manage.py runserver 0.0.0.0:8001'
     env_file:
       - .env
     ports:
-      - 8000:8000
+      - 8001:8000
     depends_on:
       - redis
       - db
