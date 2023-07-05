@@ -10,4 +10,4 @@ class OperatorIsNotBusy(BasePermission):
     
 class IsRegistrator(BasePermission):
     def has_permission(self, request, view):
-        return request.user.profile.position == 'registrator' and request.user.profile.is_banned != True
+        return request.user.profile.position == 'registrator' and request.user.profile.banned != True

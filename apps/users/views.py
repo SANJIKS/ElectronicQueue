@@ -17,6 +17,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
+from apps.booking.models import Booking
+from apps.booking.serializers import BookingSerializer
+
 from .permissions import IsOperatorOnline, OperatorIsNotBusy, IsRegistrator
 from .models import Profile
 from .serializers import ChangeNotes, GetByProps, GetWindowsSerializer, ProfileSerializer
@@ -535,6 +538,28 @@ class RegistratorViewSet(viewsets.ViewSet):
 
         return Response(serializer.data, status=200)
     
+    @action(detail=False, methods=['post'])
+    @swagger_auto_schema(request_body=GetByProps)
+    def get_bookings_by_props(self, request):
+        filters = {}
+        if 'first_name' in request.data and request.data['first_name'] != "":
+            filters['first_name'] = request.data['first_name']
+        if 'last_name' in request.data and request.data['last_name'] != "":
+            filters['last_name'] = request.data['last_name']
+        if 'surname' in request.data and request.data['surname'] != "":
+            filters['surname'] = request.data['surname']
+        if 'phone' in request.data and request.data['phone'] != "":
+            filters['phone_number'] = request.data['phone']
+        if 'pasport' in request.data and request.data['pasport'] != "":
+            filters['pasport'] = request.data['pasport']
+
+        bookings = Booking.objects.filter(**filters)
+
+        serializer = BookingSerializer(bookings, many=True)
+
+        return Response(serializer.data, status=200)
+
+    
 
     @action(detail=True, methods=['post'])
     def mark_as_cancelled(self, request, pk=None):
@@ -561,3 +586,12 @@ class RegistratorViewSet(viewsets.ViewSet):
                 waiting_customer.save()
 
         return Response({'message': 'Талон отменен.'})
+    
+
+    @action(detail=True, methods=['get'])
+    def get_bookings(self, request, pk=None):
+        today = date.today()
+        bookings = Booking.objects.filter(queue__branch=pk, date__gte=today)
+        serializer = BookingSerializer(bookings, many=True)
+        return Response(serializer.data)
+    
