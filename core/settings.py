@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'celery',
     'django_celery_beat',
     'redis',
+    'uvicorn',
     
     #my apps
     'apps.qsystem',
