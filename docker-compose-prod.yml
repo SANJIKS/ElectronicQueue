@@ -17,7 +17,7 @@ services:
       - media_volume:/app/media
       - db:/app/db
     ports:
-      - "8000:8001"
+      - "8001:8000"
     command: gunicorn --access-logfile - --workers 3 --bind 0.0.0.0:8000 core.asgi:application
 
   redis:
@@ -59,9 +59,9 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - api
-    command: daphne -u /app/core.asgi:application -v 2 -p 8000
+    command: daphne -u /app/core.asgi:application -v 2 -p 8001
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
