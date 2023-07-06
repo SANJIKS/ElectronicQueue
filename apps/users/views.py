@@ -190,7 +190,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         other_customers = queue.customers.exclude(pk=pk)
 
         for other_customer in other_customers:
-            if other_customer.position > current_position:
+            if other_customer.position is not None and other_customer.position > current_position:
                 other_customer.position -= 1
                 other_customer.save()
         customer.operator = self.request.user
