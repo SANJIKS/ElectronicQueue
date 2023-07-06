@@ -55,7 +55,7 @@ class GetQueueCustomersSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Customer
-        fields = ('id', 'position', 'ticket_number', 'queue',  'category', 'in_queue_time')
+        fields = ('id', 'position', 'ticket_number', 'queue',  'category', 'in_queue_time', 'is_served')
 
     def to_representation(self, instance):
         representation =  super().to_representation(instance)

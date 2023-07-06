@@ -50,7 +50,6 @@ class GetWindowsSerializer(serializers.ModelSerializer):
         operator = User.objects.get(pk=representation['operator'])
         
         queues = self.get_queues(operator)
-        print(queues)
         representation['queues'] = [queue.name for queue in queues]
 
         today = timezone.localdate()

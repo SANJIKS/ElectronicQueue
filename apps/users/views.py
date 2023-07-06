@@ -280,6 +280,23 @@ class OperatorViewSet(viewsets.ModelViewSet):
         windows = Window.objects.filter(branch=branch)
         serializer = GetWindowsSerializer(windows, many=True, context={'operator': self.request.user})
         return Response(serializer.data, status=200)
+    
+
+    @action(detail=False, methods=['get'])
+    def get_windows_for_transfer(self, request):
+        operator = self.request.user
+
+        queue_ids = operator.queues.values_list('id', flat=True)
+
+        windows = Window.objects.filter(
+            branch=operator.window.branch,   # Фильтр по филиалу
+            operator__queues__id__in=queue_ids,  # Фильтр по принадлежности к очереди оператора
+            is_busy=False,   # Фильтр по свободному окну
+            is_online=True  # Фильтр по онлайн-статусу окна
+        )
+
+        serializer = GetWindowsSerializer(windows, many=True, context={'operator': operator})
+        return Response(serializer.data, status=200)
 
 
     @action(detail=False, methods=['get'])
@@ -334,6 +351,8 @@ class OperatorViewSet(viewsets.ModelViewSet):
         customer.position = new_window.customers.count() + 1  # Позиция становится последней в новой очереди
         customer.operator = new_window.operator
         customer.old_operator = old_operator
+        new_window.is_busy = True
+        new_window.save()
         customer.save()
 
         # Обновляем позиции для остальных талонов в предыдущей очереди
