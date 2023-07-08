@@ -138,6 +138,27 @@ class OperatorViewSet(viewsets.ModelViewSet):
         
     
     @action(detail=False, methods=['get'])
+    def get_my_customers(self, request):
+        operator = self.request.user
+
+        queue = operator.queues.all()  
+        
+        if not queue:
+            return Response({'error': 'Сотрудник не привязан к очереди'}, status=404)
+        
+        queryset = Customer.objects.filter(queue__in=queue, is_served__isnull=True, operator=operator)
+
+        today = datetime.now().astimezone(timez('Asia/Bishkek'))
+        start_of_day = datetime.combine(today.date(), time.min).astimezone(timez('Asia/Bishkek'))
+        end_of_day = datetime.combine(today.date(), time.max).astimezone(timez('Asia/Bishkek'))
+        queryset = queryset.filter(created_at__gte=start_of_day, created_at__lte=end_of_day, old_operator__isnull=False)
+
+        serializer = GetQueueCustomersSerializer(queryset, many=False)
+        return Response(serializer.data)
+        
+        
+    
+    @action(detail=False, methods=['get'])
     def get_customers_in_queue(self, request):
         """
         Эндпоинт для получения талонов в очередях которые обслуживает оператор
@@ -154,7 +175,7 @@ class OperatorViewSet(viewsets.ModelViewSet):
         today = datetime.now().astimezone(timez('Asia/Bishkek'))
         start_of_day = datetime.combine(today.date(), time.min).astimezone(timez('Asia/Bishkek'))
         end_of_day = datetime.combine(today.date(), time.max).astimezone(timez('Asia/Bishkek'))
-        queryset = queryset.filter(created_at__gte=start_of_day, created_at__lte=end_of_day)  
+        queryset = queryset.filter(created_at__gte=start_of_day, created_at__lte=end_of_day, old_operator=None)  
 
         queryset = queryset.annotate(
             is_regular=Case(

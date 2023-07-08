@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'apps.branches',
     'apps.users',
     'apps.booking',
+    'apps.admins',
+    'apps.reports'
 ]
 
 MIDDLEWARE = [
@@ -256,6 +258,17 @@ LOGGING = {
 
 CELERY_BROKER_URL = "redis://localhost:6379"
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
+
+CELERY_BEAT_SCHEDULE = {
+    'check_func_task': {
+        'task': 'apps.branches.tasks.check_func',
+        'schedule': crontab(hour=23, minute=59),
+    },
+    'generate_operator_report': {
+        'task': 'apps.reports.tasks.generate_operator_report',
+        'schedule': crontab(hour=15, minute=6),  
+    },
+}
 
 
 TCP_PORT = 8000
