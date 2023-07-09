@@ -20,6 +20,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split()
 
 INSTALLED_APPS = [
     'daphne',
+    'django_crontab',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'drf_api_logger',
+    'dbbackup',
 
     'rest_framework',
     'drf_yasg',
@@ -146,6 +148,15 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+DBBACKUP_BACKUP_DIRECTORY = os.path.join(BASE_DIR, 'backups/')
+
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups'}
+
+CRONJOBS = [
+    ('*/15 * * * *', 'core.cron.backup')
+]
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

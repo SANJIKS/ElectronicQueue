@@ -146,6 +146,8 @@ nginx/
 static/
 code/
 
+backups/
+
 # Spyder project settings
 .spyderproject
 .spyproject

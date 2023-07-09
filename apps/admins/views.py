@@ -145,3 +145,81 @@ class TCPConfigView(APIView):
             return Response({"message": "TCP port updated successfully."})
         else:
             return Response({"error": "TCP port not provided."}, status=400)
+
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
+from dbbackup import utils
+from django.core.management import call_command
+from django.core.management import CommandError
+from drf_yasg import openapi
+import os
+
+
+class BackupViewSet(ViewSet):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'backup_name': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+            required=['backup_name']
+        ),
+        operation_summary="Create database backup",
+        operation_description="Create a backup of the current database.",
+        responses={
+            200: "Backup created successfully",
+            400: "Invalid request body",
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def create_backup(self, request):
+        backup_name = request.data.get('backup_name')
+        if not backup_name:
+            return Response({'error': 'Backup name is required'}, status=400)
+
+        backup_name = backup_name + '.psql.bin'
+        backup_path = os.path.join(settings.BASE_DIR, 'backups', backup_name)
+
+        if os.path.isfile(backup_path):
+            return Response({'error': 'Backup file already exists'}, status=409)
+
+        try:
+            call_command('dbbackup', output_filename=backup_path)
+            return Response({'message': 'Backup created successfully'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'backup_name': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+            required=['backup_name']
+        ),
+        operation_summary="Restore database backup",
+        operation_description="Restore the database from a backup.",
+        responses={
+            200: "Database restored successfully",
+            400: "Invalid request body",
+            500: "Internal server error"
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def restore_backup(self, request):
+        backup_name = request.data.get('backup_name')
+        if not backup_name:
+            return Response({'error': 'Backup name is required'}, status=400)
+
+        backup_name = backup_name + '.psql.bin'
+        backup_path = os.path.join(settings.BASE_DIR, 'backups', backup_name)
+        if not os.path.isfile(backup_path):
+            return Response({'error': 'Backup file does not exist'}, status=400)
+
+        try:
+            call_command('dbrestore', input_filename=backup_path)
+            return Response({'message': 'Database restored successfully'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
