@@ -14,127 +14,597 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from .models import OperatorDailyReport
 
+from rest_framework.viewsets import ViewSet
 
 
 import tempfile
 
-class OperatorReportPDFView(APIView):
-    def get(self, request, operator_id):
-        operator = User.objects.get(pk=operator_id)
-        today = datetime.date.today()
-        report = OperatorDailyReport.objects.filter(operator=operator, date=today).latest('id')
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
+from apps.qsystem.models import Customer
+from drf_yasg.utils import swagger_auto_schema
+from .serializers import OperatorHourExcelServedReport
+from rest_framework.decorators import action
+from drf_yasg import openapi
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename=operator_report_{operator.username}.pdf'
+import docx
+from docx.shared import Inches
+import tempfile
+from docx import Document
+from django.db.models.functions import ExtractMonth
+from django.db.models import Count
 
-        with tempfile.NamedTemporaryFile(suffix='.png') as temp_file:
-            plt.figure(figsize=(8, 6))
-            x = ['Total Served', 'Average Time', 'Max Time', 'Min Time']
-            y = [report.total_served, report.average_time, report.max_time, report.min_time]
-            plt.bar(x, y)
-            plt.xlabel('Metrics')
-            plt.ylabel('Values')
-            plt.title(f'Operator Report - {report.operator.username} ({report.date})')
-            plt.savefig(temp_file.name, format='png')
-            plt.close()
+from apps.booking.models import Booking
 
-            buffer = BytesIO()
-            p = canvas.Canvas(buffer, pagesize=letter)
-            p.setFont('Helvetica', 12)
 
-            p.drawString(100, 100, f'Operator: {report.operator.username}')
-            p.drawString(100, 120, f'Date: {report.date}')
+class BookingReportViewSet(ViewSet):
 
-            p.drawImage(temp_file.name, 100, 150, width=400, height=300)
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='year',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_INT64,
+            required=True,
+            description='Date in the format "YYYY"')
+    ])
 
-            p.showPage()
-            p.save()
+    def get_monthly_booking_statistics(self, request):
+        year = request.query_params.get('year')
 
-            pdf = buffer.getvalue()
-            buffer.close()
+        try:
+            year = int(year)
+        except ValueError:
+            return Response({'error': 'Invalid year format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        response.write(pdf)
+        start_date = datetime(year, 1, 1)
+        end_date = start_date + relativedelta(years=1) - timedelta(days=1)
+
+        bookings = Booking.objects.filter(date__range=(start_date, end_date))
+
+        monthly_bookings = [0] * 12
+
+        for month in range(1, 13):
+            month_start = datetime(year, month, 1)
+            month_end = month_start + relativedelta(months=1) - timedelta(days=1)
+            month_bookings = bookings.filter(date__range=(month_start, month_end))
+            monthly_bookings[month-1] = month_bookings.count()
+
+        x = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+        y = monthly_bookings
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y)
+
+        plt.xlabel('Month')
+        plt.ylabel('Number of Bookings')
+        plt.title(f'Monthly Booking Statistics - {year}')
+
+        chart_file = 'chart.png'
+        plt.savefig(chart_file)
+
+        document = Document()
+        document.add_paragraph(f'Year: {year}')
+        document.add_picture(chart_file, width=Inches(6), height=Inches(4))
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = f'attachment; filename=booking_statistics_{year}.docx'
+        document.save(response)
+
+        return response
+
+
+
+
+
+class CustomersCancelledExcelViewSet(ViewSet):
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='year',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_INT64,
+            required=True,
+            description='Date in the format "YYYY"')
+    ])
+    def get_year_report(self, request):
+
+        year = request.query_params.get('year')
+
+
+        customers = self.get_customers_by_year(year)
+
+      
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+       
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Номер паспорта'
+        ws['D1'] = 'Категория'
+        ws['E1'] = 'Дата'
+        ws['F1'] = 'Филиал'
+
+
+      
+        row = 2
+        for customer in customers:
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=customer.pasport)
+            ws.cell(row=row, column=4, value=customer.category)
+            ws.cell(row=row, column=5, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=6, value=customer.queue.branch.name)
+
+            for column in range(1, 5):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+      
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+        
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=customers_day_report__{year}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+
+    
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_day_report(self, request):
+
+        date = request.query_params.get('date')
+
+
+        customers = self.get_customers_by_day(date)
+
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Время обслуживания(с)'
+        ws['D1'] = 'Начало обслуживания'
+        ws['E1'] = 'Конец обслуживания'
+        ws['F1'] = 'Время ожидания'
+        ws['G1'] = 'Номер окна'
+        ws['H1'] = 'Номер паспорта'
+        ws['I1'] = 'Категория'
+        ws['J1'] = 'Оператор'
+        ws['K1'] = 'Дата'
+        ws['L1'] = 'Филиал'
+
+
+        row = 2
+        for customer in customers:
+
+            served_start = customer.served_start.replace(tzinfo=None)
+            served_at = customer.served_at.replace(tzinfo=None)
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S'))  
+            ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
+            ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
+            ws.cell(row=row, column=7, value=customer.window.number)
+            ws.cell(row=row, column=8, value=customer.pasport)
+            ws.cell(row=row, column=9, value=customer.category)
+            ws.cell(row=row, column=10, value=customer.operator.username)
+            ws.cell(row=row, column=11, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=12, value=customer.queue.branch.name)
+
+            for column in range(1, 11):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=customers_day_report_{date}.xlsx'
+        response.write(output.getvalue())
 
         return response
     
 
-import os
-from PyPDF2 import PdfReader
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='start_date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        ),
+        openapi.Parameter(
+            name='end_date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_days_report(self, request):
 
-class OperatorWeekReportPDFView(APIView):
-    def get(self, request, operator_id):
-        operator = User.objects.get(pk=operator_id)
-        today = datetime.date.today()
-        week_start = today - datetime.timedelta(days=6)
-        reports = OperatorDailyReport.objects.filter(operator=operator, date__range=(week_start, today))
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
 
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename=operator_week_report_{operator.username}.pdf'
 
-        with tempfile.NamedTemporaryFile(suffix='.png') as tmp_file1, \
-             tempfile.NamedTemporaryFile(suffix='.png') as tmp_file2:
+        customers = self.get_customers_by_days(start_date, end_date)
 
-            plt.figure(figsize=(8, 6))
-            x = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-            width = 0.15
 
-            total_served = [0] * 7
-            max_time = [0] * 7
-            min_time = [0] * 7
-            average_time = [0] * 7
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
 
-            for report in reports:
-                day_of_week = report.date.weekday()
-                total_served[day_of_week] = report.total_served
-                max_time[day_of_week] = report.max_time
-                min_time[day_of_week] = report.min_time
-                average_time[day_of_week] = report.average_time
 
-            days = range(len(x))
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Время обслуживания(с)'
+        ws['D1'] = 'Начало обслуживания'
+        ws['E1'] = 'Конец обслуживания'
+        ws['F1'] = 'Время ожидания'
+        ws['G1'] = 'Номер окна'
+        ws['H1'] = 'Номер паспорта'
+        ws['I1'] = 'Категория'
+        ws['J1'] = 'Оператор'
+        ws['K1'] = 'Дата'
+        ws['L1'] = 'Филиал'
 
-            plt.bar(days, max_time, width=width, align='center', label='Max Time')
-            plt.bar([d + width for d in days], min_time, width=width, align='center', label='Min Time')
-            plt.bar([d + 2 * width for d in days], average_time, width=width, align='center', label='Average Time')
 
-            plt.xlabel('Days of the Week')
-            plt.ylabel('Time (seconds)')
-            plt.title(f'Operator Weekly Time Report - {operator.username}')
-            plt.xticks(days, x)
-            plt.legend()
+        row = 2
+        for customer in customers:
 
-            plt.savefig(tmp_file1.name, format='png')
-            plt.close()
+            served_start = customer.served_start.replace(tzinfo=None)
+            served_at = customer.served_at.replace(tzinfo=None)
 
-            plt.figure(figsize=(8, 6))
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S')) 
+            ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
+            ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
+            ws.cell(row=row, column=7, value=customer.window.number)
+            ws.cell(row=row, column=8, value=customer.pasport)
+            ws.cell(row=row, column=9, value=customer.category)
+            ws.cell(row=row, column=10, value=customer.operator.username)
+            ws.cell(row=row, column=11, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=12, value=customer.queue.branch.name)
 
-            plt.bar(days, total_served, width=width, align='center', label='Total Served')
+            for column in range(1, 11):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
 
-            plt.xlabel('Days of the Week')
-            plt.ylabel('Number of Servings')
-            plt.title(f'Operator Weekly Service Report - {operator.username}')
-            plt.xticks(days, x)
-            plt.legend()
+            row += 1
 
-            plt.savefig(tmp_file2.name, format='png')
-            plt.close()
 
-            p = canvas.Canvas(response, pagesize=letter)
-            p.setFont('Helvetica', 12)
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
 
-            p.drawString(100, 100, f'Operator: {operator.username}')
-            p.drawString(100, 120, f'Week Start: {week_start}')
-            p.drawString(100, 140, f'Week End: {today}')
 
-            p.drawImage(tmp_file1.name, 100, 200, width=400, height=300)
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
 
-            p.showPage()
-
-            p.drawImage(tmp_file2.name, 100, 200, width=400, height=300)
-
-            p.showPage()
-            p.save()
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=customers_day_report_{start_date}_{end_date}.xlsx'
+        response.write(output.getvalue())
 
         return response
+    
+
+    def get_customers_by_days(self, start_date, end_date):
+        customers = Customer.objects.filter(created_at__date__range=(start_date, end_date), is_served=False)
+        return customers
+
+    def get_customers_by_day(self, date):
+        customers = Customer.objects.filter(created_at__date=date, is_served=False)
+        return customers
+    
+    def get_customers_by_year(self, year):
+        customers = Customer.objects.filter(created_at__year=year, is_served=False)
+        return customers
+
+
+class CustomersServedExcelViewSet(ViewSet):
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='year',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_INT64,
+            required=True,
+            description='Date in the format "YYYY"')
+    ])
+    def get_year_report(self, request):
+
+        year = request.query_params.get('year')
+
+
+        customers = self.get_customers_by_year(year)
+
+      
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+       
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Номер паспорта'
+        ws['D1'] = 'Категория'
+        ws['E1'] = 'Дата'
+        ws['F1'] = 'Филиал'
+
+
+      
+        row = 2
+        for customer in customers:
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=customer.pasport)
+            ws.cell(row=row, column=4, value=customer.category)
+            ws.cell(row=row, column=5, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=6, value=customer.queue.branch.name)
+
+            for column in range(1, 5):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+      
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+        
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=customers_day_report__{year}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+
+    
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_day_report(self, request):
+
+        date = request.query_params.get('date')
+
+
+        customers = self.get_customers_by_day(date)
+
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Время обслуживания(с)'
+        ws['D1'] = 'Начало обслуживания'
+        ws['E1'] = 'Конец обслуживания'
+        ws['F1'] = 'Время ожидания'
+        ws['G1'] = 'Номер окна'
+        ws['H1'] = 'Номер паспорта'
+        ws['I1'] = 'Категория'
+        ws['J1'] = 'Оператор'
+        ws['K1'] = 'Дата'
+        ws['L1'] = 'Филиал'
+
+
+        row = 2
+        for customer in customers:
+
+            served_start = customer.served_start.replace(tzinfo=None)
+            served_at = customer.served_at.replace(tzinfo=None)
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S'))  
+            ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
+            ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
+            ws.cell(row=row, column=7, value=customer.window.number)
+            ws.cell(row=row, column=8, value=customer.pasport)
+            ws.cell(row=row, column=9, value=customer.category)
+            ws.cell(row=row, column=10, value=customer.operator.username)
+            ws.cell(row=row, column=11, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=12, value=customer.queue.branch.name)
+
+            for column in range(1, 11):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=customers_day_report_{date}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+    
+
+    @action(detail=False, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='start_date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        ),
+        openapi.Parameter(
+            name='end_date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_days_report(self, request):
+
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+
+        customers = self.get_customers_by_days(start_date, end_date)
+
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Время обслуживания(с)'
+        ws['D1'] = 'Начало обслуживания'
+        ws['E1'] = 'Конец обслуживания'
+        ws['F1'] = 'Время ожидания'
+        ws['G1'] = 'Номер окна'
+        ws['H1'] = 'Номер паспорта'
+        ws['I1'] = 'Категория'
+        ws['J1'] = 'Оператор'
+        ws['K1'] = 'Дата'
+        ws['L1'] = 'Филиал'
+
+
+        row = 2
+        for customer in customers:
+
+            served_start = customer.served_start.replace(tzinfo=None)
+            served_at = customer.served_at.replace(tzinfo=None)
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S')) 
+            ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
+            ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
+            ws.cell(row=row, column=7, value=customer.window.number)
+            ws.cell(row=row, column=8, value=customer.pasport)
+            ws.cell(row=row, column=9, value=customer.category)
+            ws.cell(row=row, column=10, value=customer.operator.username)
+            ws.cell(row=row, column=11, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=12, value=customer.queue.branch.name)
+
+            for column in range(1, 11):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=customers_day_report_{start_date}_{end_date}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+    
+
+    def get_customers_by_days(self, start_date, end_date):
+        customers = Customer.objects.filter(created_at__date__range=(start_date, end_date), is_served=True)
+        return customers
+
+    def get_customers_by_day(self, date):
+        customers = Customer.objects.filter(created_at__date=date, is_served=True)
+        return customers
+    
+    def get_customers_by_year(self, year):
+        customers = Customer.objects.filter(created_at__year=year, is_served=True)
+        return customers
 
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -187,22 +657,6 @@ class OperatorHourReportPDFView(APIView):
         return response
     
 
-from openpyxl import Workbook
-from openpyxl.styles import Alignment
-from openpyxl.utils import get_column_letter
-from apps.qsystem.models import Customer
-from drf_yasg.utils import swagger_auto_schema
-from .serializers import OperatorHourExcelServedReport
-from rest_framework.viewsets import ViewSet
-from rest_framework.decorators import action
-from drf_yasg import openapi
-from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta
-
-import docx
-from docx.shared import Inches
-import tempfile
-from docx import Document
 
 class OperatorGraphicReportWordViewSet(ViewSet):
     @action(detail=True, methods=['get'])
@@ -244,7 +698,7 @@ class OperatorGraphicReportWordViewSet(ViewSet):
 
             average_times[month-1] = average_time
 
-        # Create and save the line graph
+        
         x = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         y = average_times
 
@@ -255,15 +709,15 @@ class OperatorGraphicReportWordViewSet(ViewSet):
         plt.ylabel('Average Time (minutes)')
         plt.title(f'Operator Yearly Average Time Report - {operator.username} - {year}')
 
-        plt.savefig('graph.png')  # Save the graph as PNG
+        plt.savefig('graph.png')  
 
-        # Create the Word document
+        
         doc = Document()
         doc.add_paragraph(f'Operator: {operator.username}')
         doc.add_paragraph(f'Year: {year}')
         doc.add_picture('graph.png', width=Inches(6), height=Inches(4))
 
-        # Save the Word document
+        
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         response['Content-Disposition'] = f'attachment; filename=operator_yearly_report_{operator.username}_{year}.docx'
         doc.save(response)
@@ -585,8 +1039,6 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
         row = 2
         for customer in customers:
-            print(customer.served_start)
-            print(customer.served_at) 
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
@@ -680,8 +1132,6 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
         row = 2
         for customer in customers:
-            print(customer.served_start)  
-            print(customer.served_at)  
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
@@ -763,9 +1213,7 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
    
         row = 2
-        for customer in customers:
-            print(customer.served_start) 
-            print(customer.served_at)  
+        for customer in customers: 
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
