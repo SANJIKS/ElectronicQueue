@@ -1,4 +1,4 @@
 from django.contrib import admin
-from .models import OperatorReport
+from .models import OperatorDailyReport
 
-admin.site.register([OperatorReport])
+admin.site.register([OperatorDailyReport])

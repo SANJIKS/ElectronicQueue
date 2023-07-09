@@ -133,7 +133,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         if category != 'regular':
             position = Customer.objects.exclude(category='regular').filter(queue=queue).aggregate(Max('position'))
         else:
-            position = Customer.objects.filter(queue=queue).aggregate(Max('position'))
+            position = Customer.objects.filter(queue=queue, created_at__date=today).aggregate(Max('position'))
         
         last_position = position.get('position__max')
 
