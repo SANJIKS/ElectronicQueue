@@ -4,19 +4,6 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-@api_view(['GET'])
-def download_file(request):
-    file_path = BASE_DIR / 'reports' / 'graph.pdf'
-
-    file = open(file_path, 'rb')
-
-    response = FileResponse(file)
-
-    response['Content-Disposition'] = 'attachment; filename="report.pdf"'
-
-    return response
-
-
 import datetime
 from django.contrib.auth.models import User
 from django.http import HttpResponse
@@ -170,7 +157,6 @@ class OperatorHourReportPDFView(APIView):
         if not reports:
             return Response({'error': 'No reports available for the specified date and hour.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # График и формирование отчета за выбранный час
         x = ['Max Time', 'Min Time', 'Average Time']
         width = 0.4
 
@@ -210,6 +196,251 @@ from .serializers import OperatorHourExcelServedReport
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from drf_yasg import openapi
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
+
+import docx
+from docx.shared import Inches
+import tempfile
+from docx import Document
+
+class OperatorGraphicReportWordViewSet(ViewSet):
+    @action(detail=True, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='year',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY"'
+        )
+    ])
+    def get_monthly_average_time(self, request, pk=None):
+        operator = User.objects.get(pk=pk)
+        year = request.query_params.get('year')
+
+        try:
+            year = int(year)
+        except ValueError:
+            return Response({'error': 'Invalid year format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        start_date = datetime(year, 1, 1)  # Use datetime instead of datetime.date
+        end_date = start_date + relativedelta(years=1) - timedelta(days=1)
+
+        customers = Customer.objects.filter(operator=operator, served_start__range=(start_date, end_date))
+
+        average_times = [0] * 12
+
+        for month in range(1, 13):
+            month_start = datetime(year, month, 1)  # Use datetime instead of datetime.date
+            month_end = month_start + relativedelta(months=1) - timedelta(days=1)
+            month_customers = customers.filter(served_start__range=(month_start, month_end))
+
+            if month_customers.exists():
+                average_time = sum((customer.served_at - customer.served_start).total_seconds() / 60 for customer in month_customers if customer.served_at and customer.served_start) / len(month_customers)
+            else:
+                average_time = 0
+
+            average_times[month-1] = average_time
+
+        # Create and save the line graph
+        x = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+        y = average_times
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(x, y)
+
+        plt.xlabel('Month')
+        plt.ylabel('Average Time (minutes)')
+        plt.title(f'Operator Yearly Average Time Report - {operator.username} - {year}')
+
+        plt.savefig('graph.png')  # Save the graph as PNG
+
+        # Create the Word document
+        doc = Document()
+        doc.add_paragraph(f'Operator: {operator.username}')
+        doc.add_paragraph(f'Year: {year}')
+        doc.add_picture('graph.png', width=Inches(6), height=Inches(4))
+
+        # Save the Word document
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = f'attachment; filename=operator_yearly_report_{operator.username}_{year}.docx'
+        doc.save(response)
+
+        return response
+
+
+
+
+
+class OperatorStatisticReportPDFViewSet(ViewSet):
+
+    @action(detail=True, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='year',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_INTEGER,
+            format=openapi.FORMAT_INT64,
+            required=True,
+            description='Date in the format "YYYY"')
+    ])
+    def get_yearly_report(self, request, pk=None):
+        operator = User.objects.get(pk=pk)
+        year = request.query_params.get('year')
+
+        try:
+            year = int(year)
+        except ValueError:
+            return Response({'error': 'Invalid year format'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        start_date = datetime.date(year, 1, 1)
+        end_date = start_date + relativedelta(years=1) - datetime.timedelta(days=1)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=operator_year_report_{operator.username}_{year}.pdf'
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as tmp_file1, \
+            tempfile.NamedTemporaryFile(suffix='.png') as tmp_file2:
+
+            plt.figure(figsize=(8, 6))
+            x = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+            width = 0.25
+
+            total_served = [0] * 12
+            max_time = [0] * 12
+            min_time = [0] * 12
+            average_time = [0] * 12
+
+            for month in range(1, 13):
+                month_start = datetime.date(year, month, 1)
+                month_end = month_start + relativedelta(months=1) - datetime.timedelta(days=1)
+                reports = OperatorDailyReport.objects.filter(operator=operator, date__range=(month_start, month_end))
+
+                if reports.exists():
+                    total_served[month-1] = sum(report.total_served for report in reports)
+                    max_time[month-1] = max(report.max_time for report in reports)
+                    min_time[month-1] = min(report.min_time for report in reports)
+                    average_time[month-1] = sum(report.average_time for report in reports) / len(reports)
+                else:
+                    total_served[month-1] = 0
+                    max_time[month-1] = 0
+                    min_time[month-1] = 0
+                    average_time[month-1] = 0
+
+            months = range(len(x))
+
+            plt.bar([m - width for m in months], max_time, width=width, align='center', label='Max Time')
+
+            plt.bar(months, min_time, width=width, align='edge', label='Min Time')
+
+            plt.bar([m + width for m in months], average_time, width=width, align='center', label='Average Time')
+
+            plt.xlabel('Months')
+            plt.ylabel('Time (seconds)')
+            plt.title(f'Operator Yearly Time Report - {operator.username}')
+            plt.xticks(months, x, rotation=45)
+            plt.legend()
+
+            plt.savefig(tmp_file1.name, format='png')
+            plt.close()
+
+            plt.figure(figsize=(8, 6))
+
+            plt.bar(months, total_served, width=width, align='center', label='Total Served')
+
+            plt.xlabel('Months')
+            plt.ylabel('Number of Servings')
+            plt.title(f'Operator Yearly Service Report - {operator.username}')
+            plt.xticks(months, x, rotation=45)
+            plt.legend()
+
+            plt.savefig(tmp_file2.name, format='png')
+            plt.close()
+
+            p = canvas.Canvas(response, pagesize=letter)
+            p.setFont('Helvetica', 12)
+
+            p.drawString(100, 100, f'Operator: {operator.username}')
+            p.drawString(100, 120, f'Year: {year}')
+
+            p.drawImage(tmp_file1.name, 100, 200, width=400, height=300)
+            p.drawImage(tmp_file2.name, 100, 500, width=400, height=300)
+
+            p.showPage()
+            p.save()
+
+        return response
+
+    @action(detail=True, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_daily_report(self, request, pk=None):
+        operator = User.objects.get(pk=pk)
+        date_str = request.query_params.get('date')
+
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        start_date = datetime.combine(date, datetime.min.time())
+        end_date = start_date + timedelta(days=1)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=operator_daily_report_{operator.username}_{date}.pdf'
+
+        with tempfile.NamedTemporaryFile(suffix='.png') as tmp_file:
+
+            plt.figure(figsize=(8, 6))
+            width = 0.35
+
+            customers = Customer.objects.filter(operator=operator, served_start__range=(start_date, end_date))
+
+            if customers.exists():
+                min_time = min((customer.served_at - customer.served_start).total_seconds() / 60 for customer in customers)
+                max_time = max((customer.served_at - customer.served_start).total_seconds() / 60 for customer in customers)
+                average_time = sum((customer.served_at - customer.served_start).total_seconds() / 60 for customer in customers) / len(customers)
+                num_services = customers.count()
+            else:
+                min_time = 0
+                max_time = 0
+                average_time = 0
+                num_services = 0
+
+            plt.bar(['Min Time', 'Max Time', 'Average Time'], [min_time, max_time, average_time], width=width, align='center')
+
+            plt.xlabel('Time')
+            plt.ylabel('Duration (minutes)')
+            plt.title(f'Operator Daily Time Report - {operator.username} - {date}')
+            plt.ylim(0, max_time * 1.2)
+
+            plt.bar(['Number of Services'], [num_services], width=width, align='center')
+
+            plt.savefig(tmp_file.name, format='png')
+            plt.close()
+
+            p = canvas.Canvas(response, pagesize=letter)
+            p.setFont('Helvetica', 12)
+
+            p.drawString(100, 100, f'Operator: {operator.username}')
+            p.drawString(100, 120, f'Date: {date}')
+
+            p.drawImage(tmp_file.name, 100, 200, width=400, height=300)
+
+            p.showPage()
+            p.save()
+
+        return response
 
 
 
