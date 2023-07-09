@@ -1,10 +1,10 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import download_file, OperatorReportPDFView, OperatorWeekReportPDFView, OperatorServedReportExcelViewSet
+from .views import download_file, OperatorReportPDFView, OperatorWeekReportPDFView, OperatorServedReportExcelViewSet, OperatorCancelledReportExcelViewSet
 
 router = routers.DefaultRouter()
-router.register('operator-served/excel', OperatorServedReportExcelViewSet, basename='operator-excel')
-
+router.register('operator-served/excel', OperatorServedReportExcelViewSet, basename='operator-served-excel')
+router.register('operator-cancelled/excel', OperatorCancelledReportExcelViewSet, basename='operator-cancelled-excel')
 
 urlpatterns = [
     path('', include(router.urls)),

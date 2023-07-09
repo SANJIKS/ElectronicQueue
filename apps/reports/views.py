@@ -217,13 +217,6 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
     @action(detail=True, methods=['get'])
     @swagger_auto_schema(manual_parameters=[
-        # openapi.Parameter(
-        #     name='operator_id',
-        #     in_=openapi.IN_QUERY,
-        #     type=openapi.TYPE_INTEGER,
-        #     required=True,
-        #     description='ID of the operator'
-        # ),
         openapi.Parameter(
             name='date',
             in_=openapi.IN_QUERY,
@@ -258,12 +251,10 @@ class OperatorServedReportExcelViewSet(ViewSet):
         operator = get_object_or_404(User, pk=operator_id)
         customers = self.get_customers_by_hour(operator, date, start_hour, end_hour)
 
-        # Создание и форматирование рабочей книги Excel
         wb = Workbook()
         ws = wb.active
         ws.title = 'Hourly Report'
 
-        # Запись заголовков столбцов
         ws['A1'] = 'ID'
         ws['B1'] = 'Номер талона'
         ws['C1'] = 'Время обслуживания(с)'
@@ -277,11 +268,8 @@ class OperatorServedReportExcelViewSet(ViewSet):
         ws['K1'] = 'Дата'
         ws['L1'] = 'Филиал'
 
-        # Запись данных отчета
         row = 2
         for customer in customers:
-            print(customer.served_start)  # Отладочное сообщение
-            print(customer.served_at)  # Отладочное сообщениеъ
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
@@ -306,17 +294,17 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
             row += 1
 
-        # Установка выравнивания ячеек
+
         for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
             for cell in row:
                 cell.alignment = Alignment(horizontal='center')
 
-        # Сохранение книги Excel в байтовый поток
+
         output = BytesIO()
         wb.save(output)
         output.seek(0)
 
-        # Отправка файла Excel в качестве ответа
+
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=operator_hour_report_{operator.username}_{date}_{start_hour}-{end_hour}.xlsx'
         response.write(output.getvalue())
@@ -344,12 +332,12 @@ class OperatorServedReportExcelViewSet(ViewSet):
         operator = get_object_or_404(User, pk=operator_id)
         customers = self.get_customers_by_day(operator, date)
 
-        # Создание и форматирование рабочей книги Excel
+
         wb = Workbook()
         ws = wb.active
         ws.title = 'Hourly Report'
 
-        # Запись заголовков столбцов
+
         ws['A1'] = 'ID'
         ws['B1'] = 'Номер талона'
         ws['C1'] = 'Время обслуживания(с)'
@@ -363,11 +351,11 @@ class OperatorServedReportExcelViewSet(ViewSet):
         ws['K1'] = 'Дата'
         ws['L1'] = 'Филиал'
 
-        # Запись данных отчета
+
         row = 2
         for customer in customers:
-            print(customer.served_start)  # Отладочное сообщение
-            print(customer.served_at)  # Отладочное сообщениеъ
+            print(customer.served_start)
+            print(customer.served_at) 
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
@@ -375,7 +363,7 @@ class OperatorServedReportExcelViewSet(ViewSet):
             ws.cell(row=row, column=1, value=customer.id)
             ws.cell(row=row, column=2, value=customer.ticket_number)
             ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
-            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S'))  # Форматирование времени
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S'))  
             ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
             ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
             ws.cell(row=row, column=7, value=customer.window.number)
@@ -392,17 +380,17 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
             row += 1
 
-        # Установка выравнивания ячеек
+
         for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
             for cell in row:
                 cell.alignment = Alignment(horizontal='center')
 
-        # Сохранение книги Excel в байтовый поток
+
         output = BytesIO()
         wb.save(output)
         output.seek(0)
 
-        # Отправка файла Excel в качестве ответа
+
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=operator_day_report_{operator.username}_{date}.xlsx'
         response.write(output.getvalue())
@@ -439,12 +427,12 @@ class OperatorServedReportExcelViewSet(ViewSet):
         operator = get_object_or_404(User, pk=operator_id)
         customers = self.get_customers_by_days(operator, start_date, end_date)
 
-        # Создание и форматирование рабочей книги Excel
+
         wb = Workbook()
         ws = wb.active
         ws.title = 'Hourly Report'
 
-        # Запись заголовков столбцов
+
         ws['A1'] = 'ID'
         ws['B1'] = 'Номер талона'
         ws['C1'] = 'Время обслуживания(с)'
@@ -458,11 +446,11 @@ class OperatorServedReportExcelViewSet(ViewSet):
         ws['K1'] = 'Дата'
         ws['L1'] = 'Филиал'
 
-        # Запись данных отчета
+
         row = 2
         for customer in customers:
-            print(customer.served_start)  # Отладочное сообщение
-            print(customer.served_at)  # Отладочное сообщениеъ
+            print(customer.served_start)  
+            print(customer.served_at)  
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
@@ -470,7 +458,7 @@ class OperatorServedReportExcelViewSet(ViewSet):
             ws.cell(row=row, column=1, value=customer.id)
             ws.cell(row=row, column=2, value=customer.ticket_number)
             ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
-            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S'))  # Форматирование времени
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S')) 
             ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
             ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
             ws.cell(row=row, column=7, value=customer.window.number)
@@ -487,17 +475,16 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
             row += 1
 
-        # Установка выравнивания ячеек
+
         for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
             for cell in row:
                 cell.alignment = Alignment(horizontal='center')
 
-        # Сохранение книги Excel в байтовый поток
+
         output = BytesIO()
         wb.save(output)
         output.seek(0)
 
-        # Отправка файла Excel в качестве ответа
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=operator_day_report_{operator.username}_{start_date}_{end_date}.xlsx'
         response.write(output.getvalue())
@@ -524,12 +511,12 @@ class OperatorServedReportExcelViewSet(ViewSet):
         operator = get_object_or_404(User, pk=operator_id)
         customers = self.get_customers_by_year(operator, year)
 
-        # Создание и форматирование рабочей книги Excel
+
         wb = Workbook()
         ws = wb.active
         ws.title = 'Hourly Report'
 
-        # Запись заголовков столбцов
+
         ws['A1'] = 'ID'
         ws['B1'] = 'Номер талона'
         ws['C1'] = 'Время обслуживания(с)'
@@ -543,11 +530,11 @@ class OperatorServedReportExcelViewSet(ViewSet):
         ws['K1'] = 'Дата'
         ws['L1'] = 'Филиал'
 
-        # Запись данных отчета
+   
         row = 2
         for customer in customers:
-            print(customer.served_start)  # Отладочное сообщение
-            print(customer.served_at)  # Отладочное сообщениеъ
+            print(customer.served_start) 
+            print(customer.served_at)  
 
             served_start = customer.served_start.replace(tzinfo=None)
             served_at = customer.served_at.replace(tzinfo=None)
@@ -555,7 +542,7 @@ class OperatorServedReportExcelViewSet(ViewSet):
             ws.cell(row=row, column=1, value=customer.id)
             ws.cell(row=row, column=2, value=customer.ticket_number)
             ws.cell(row=row, column=3, value=(served_at - served_start).total_seconds())
-            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S'))  # Форматирование времени
+            ws.cell(row=row, column=4, value=served_start.strftime('%H:%M:%S')) 
             ws.cell(row=row, column=5, value=served_at.strftime('%H:%M:%S'))
             ws.cell(row=row, column=6, value=(customer.served_start - customer.created_at).total_seconds())
             ws.cell(row=row, column=7, value=customer.window.number)
@@ -572,17 +559,17 @@ class OperatorServedReportExcelViewSet(ViewSet):
 
             row += 1
 
-        # Установка выравнивания ячеек
+      
         for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
             for cell in row:
                 cell.alignment = Alignment(horizontal='center')
 
-        # Сохранение книги Excel в байтовый поток
+        
         output = BytesIO()
         wb.save(output)
         output.seek(0)
 
-        # Отправка файла Excel в качестве ответа
+       
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=operator_day_report_{operator.username}_{year}.xlsx'
         response.write(output.getvalue())
@@ -604,4 +591,237 @@ class OperatorServedReportExcelViewSet(ViewSet):
     
     def get_customers_by_year(self, operator, year):
         customers = Customer.objects.filter(operator=operator, created_at__year=year, is_served=True)
+        return customers
+    
+
+
+class OperatorCancelledReportExcelViewSet(ViewSet):
+    @action(detail=True, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_day_report(self, request, pk=None):
+
+        operator_id = pk
+        date = request.query_params.get('date')
+
+
+        operator = get_object_or_404(User, pk=operator_id)
+        customers = self.get_customers_by_day(operator, date)
+
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+        
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Номер паспорта'
+        ws['D1'] = 'Категория'
+        ws['E1'] = 'Дата'
+        ws['F1'] = 'Филиал'
+
+
+        
+        row = 2
+        for customer in customers:
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=customer.pasport)
+            ws.cell(row=row, column=4, value=customer.category)
+            ws.cell(row=row, column=5, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=6, value=customer.queue.branch.name)
+
+            for column in range(1, 5):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+       
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+        
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+      
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=operator_day_report_{operator.username}_{date}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+    
+
+    @action(detail=True, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='start_date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        ),
+        openapi.Parameter(
+            name='end_date',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_DATE,
+            required=True,
+            description='Date in the format "YYYY-MM-DD"'
+        )
+    ])
+    def get_days_report(self, request, pk=None):
+
+        operator_id = pk
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+
+        operator = get_object_or_404(User, pk=operator_id)
+        customers = self.get_customers_by_days(operator, start_date, end_date)
+
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+        
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Номер паспорта'
+        ws['D1'] = 'Категория'
+        ws['E1'] = 'Дата'
+        ws['F1'] = 'Филиал'
+
+
+     
+        row = 2
+        for customer in customers:
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=customer.pasport)
+            ws.cell(row=row, column=4, value=customer.category)
+            ws.cell(row=row, column=5, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=6, value=customer.queue.branch.name)
+
+            for column in range(1, 5):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+        
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+        
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+       
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=operator_day_report_{operator.username}_{start_date}_{end_date}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+    
+
+    @action(detail=True, methods=['get'])
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            name='year',
+            in_=openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            format=openapi.FORMAT_INT64,
+            required=True,
+            description='Date in the format "YYYY"')
+    ])
+    def get_year_report(self, request, pk=None):
+
+        operator_id = pk
+        year = request.query_params.get('year')
+
+
+        operator = get_object_or_404(User, pk=operator_id)
+        customers = self.get_customers_by_year(operator, year)
+
+      
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Hourly Report'
+
+       
+        ws['A1'] = 'ID'
+        ws['B1'] = 'Номер талона'
+        ws['C1'] = 'Номер паспорта'
+        ws['D1'] = 'Категория'
+        ws['E1'] = 'Дата'
+        ws['F1'] = 'Филиал'
+
+
+      
+        row = 2
+        for customer in customers:
+
+            ws.cell(row=row, column=1, value=customer.id)
+            ws.cell(row=row, column=2, value=customer.ticket_number)
+            ws.cell(row=row, column=3, value=customer.pasport)
+            ws.cell(row=row, column=4, value=customer.category)
+            ws.cell(row=row, column=5, value=customer.created_at.strftime('%Y-%m-%d'))
+            ws.cell(row=row, column=6, value=customer.queue.branch.name)
+
+            for column in range(1, 5):
+                column_letter = get_column_letter(column)
+                cell = ws[column_letter + str(row)]
+                ws.column_dimensions[column_letter].width = max(ws.column_dimensions[column_letter].width, len(str(cell.value)))
+
+            row += 1
+
+      
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center')
+
+        
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=operator_day_report_{operator.username}_{year}.xlsx'
+        response.write(output.getvalue())
+
+        return response
+    
+
+    def get_customers_by_days(self, operator, start_date, end_date):
+        customers = Customer.objects.filter(operator=operator, created_at__date__range=(start_date, end_date), is_served=False)
+        return customers
+
+    def get_customers_by_day(self, operator, date):
+        customers = Customer.objects.filter(operator=operator, created_at__date=date, is_served=False)
+        return customers
+    
+    def get_customers_by_year(self, operator, year):
+        customers = Customer.objects.filter(operator=operator, created_at__year=year, is_served=False)
         return customers
