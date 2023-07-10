@@ -15,7 +15,7 @@ from apps.admins.permissions import IsAdmin
 from apps.qsystem.models import Queue
 from apps.users.models import Profile
 from apps.users.serializers import ProfileSerializer
-from .serializers import ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime, GetOnlineWindows
+from .serializers import BackupsSerializer, ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime, GetOnlineWindows
 
 User = get_user_model()
 
@@ -238,7 +238,12 @@ class BackupViewSet(ViewSet):
             return Response({'message': 'Database restored successfully'})
         except Exception as e:
             return Response({'error': str(e)}, status=500)
-
+        
+    
+    @action(detail=False, methods=['get'])
+    def get_backups(self, request):
+        backups = os.listdir('backups')
+        return Response(backups, status=status.HTTP_200_OK)
 
 
 from apps.reports.models import OperatorAction, CustomerAction

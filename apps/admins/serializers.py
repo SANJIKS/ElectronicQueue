@@ -49,3 +49,6 @@ class GetOnlineWindows(serializers.Serializer):
         representation = super().to_representation(instance)
         return representation
     
+
+class BackupsSerializer(serializers.Serializer):
+    backups = serializers.CharField()
