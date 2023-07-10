@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import OperatorDailyReport
+from apps.qsystem.models import Customer
+from .models import OperatorDailyReport, OperatorAction, CustomerAction
 
 class OperatorReportSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,7 +9,16 @@ class OperatorReportSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
-class OperatorHourExcelServedReport(serializers.Serializer):
-    start_hour = serializers.TimeField()
-    end_hour = serializers.TimeField()
-    date = serializers.DateField()
+class OperatorActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OperatorAction
+        fields = '__all__'
+        read_only_fields = ('id',)
+
+
+
+class CustomerActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerAction
+        fields = '__all__'
+        read_only_fields = ('id',)

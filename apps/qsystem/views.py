@@ -1,27 +1,26 @@
-from datetime import datetime, timedelta, time, date
-from pytz import timezone as timez
+from datetime import date, datetime, time, timedelta
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from decouple import config
+from django.db.models import BooleanField, Case, Count, Max, Value, When
 from django.urls import reverse
-from rest_framework import viewsets, permissions, status, serializers
-from rest_framework.response import Response
+from django.utils import timezone
+from django.utils.text import slugify
+from drf_yasg.utils import swagger_auto_schema
+from pytz import timezone as timez
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
-from django.utils import timezone
-from django.db.models import Case, When, Value, BooleanField, Count
-from decouple import config
-from django.db.models import Max
-from django.utils.text import slugify
+from rest_framework.response import Response
 
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-from drf_yasg.utils import swagger_auto_schema
+from apps.branches.models import BaseCalendar, Calendar, Window
+from apps.reports.models import CustomerAction
 
-from .permissions import IsOperator, IsOperatorOfCustomer, IsAdmin
-
-
-from .models import Queue, Customer, Waiting_List
-from .serializers import GetQueueCustomersSerializer, QueueSerializer, CustomerSerializer, ShiftWindow, WaitingListSerializer
-from apps.branches.models import BaseCalendar, Window, Calendar
+from .models import Customer, Queue, Waiting_List
+from .permissions import IsAdmin, IsOperator, IsOperatorOfCustomer
+from .serializers import (CustomerSerializer, GetQueueCustomersSerializer,
+                          QueueSerializer, ShiftWindow, WaitingListSerializer)
 
 
 class QueueViewSet(viewsets.ModelViewSet):
@@ -122,6 +121,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 "event": {},  
             }
         )
+        
+
+        action = Customer.objects.get(pk=customer_id)
+        CustomerAction.objects.create(customer=action, action='created', event=f'Создан талон {action.ticket_number}')
 
         return response
 
@@ -185,7 +188,5 @@ class PrintingView(viewsets.ViewSet):
             'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer), 
         }
         return Response(ticket_data)  
-
-
 
 

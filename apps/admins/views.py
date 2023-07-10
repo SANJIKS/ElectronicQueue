@@ -5,6 +5,10 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 
+from datetime import datetime
+from pytz import timezone as timez
+
+
 from apps.branches.models import Branch, Floor, Cabinet
 from apps.branches.serializers import CabinetSerializer, FloorSerializer
 from apps.admins.permissions import IsAdmin
@@ -234,3 +238,32 @@ class BackupViewSet(ViewSet):
             return Response({'message': 'Database restored successfully'})
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+
+
+
+from apps.reports.models import OperatorAction, CustomerAction
+from apps.reports.serializers import CustomerActionSerializer, OperatorActionSerializer
+
+class ProtocolView(ViewSet):
+    @action(detail=False, methods=['get'])
+    def get_operator_actions(self, request):
+        admin = self.request.user
+        branch = Branch.objects.get(admin=admin)
+        today = datetime.now().astimezone(timez('Asia/Bishkek'))
+
+        actions = OperatorAction.objects.filter(operator__queues__branch=branch, created_at__date=today)
+        actions = {i for i in actions}
+        serializer = OperatorActionSerializer(actions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    @action(detail=False, methods=['get'])
+    def get_customer_actions(self, request):
+        admin = self.request.user
+        branch = Branch.objects.get(admin=admin)
+        today = datetime.now().astimezone(timez('Asia/Bishkek'))
+
+        actions = CustomerAction.objects.filter(customer__queue__branch=branch, created_at__date=today)
+        actions = {i for i in actions}
+        serializer = CustomerActionSerializer(actions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

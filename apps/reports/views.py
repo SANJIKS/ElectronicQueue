@@ -1,44 +1,40 @@
-from django.http import FileResponse
-from rest_framework.decorators import api_view
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+from django.http import FileResponse
+from rest_framework.decorators import api_view
+
 
 import datetime
-from django.contrib.auth.models import User
-from django.http import HttpResponse
-from rest_framework.views import APIView
-from io import BytesIO
-import matplotlib.pyplot as plt
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from .models import OperatorDailyReport
-
-from rest_framework.viewsets import ViewSet
-
-
 import tempfile
+from datetime import datetime, timedelta
+from io import BytesIO
 
+import docx
+import matplotlib.pyplot as plt
+from dateutil.relativedelta import relativedelta
+from django.contrib.auth.models import User
+from django.db.models import Count
+from django.db.models.functions import ExtractMonth
+from django.http import HttpResponse
+from docx import Document
+from docx.shared import Inches
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
-from apps.qsystem.models import Customer
-from drf_yasg.utils import swagger_auto_schema
-from .serializers import OperatorHourExcelServedReport
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from rest_framework.decorators import action
-from drf_yasg import openapi
-from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta
-
-import docx
-from docx.shared import Inches
-import tempfile
-from docx import Document
-from django.db.models.functions import ExtractMonth
-from django.db.models import Count
+from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
 
 from apps.booking.models import Booking
+from apps.qsystem.models import Customer
 
+from .models import OperatorDailyReport
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 class BookingReportViewSet(ViewSet):
 
@@ -607,12 +603,11 @@ class CustomersServedExcelViewSet(ViewSet):
         return customers
 
 
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import pandas as pd
 from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from rest_framework import status
-
+from rest_framework.response import Response
 
 
 class OperatorHourReportPDFView(APIView):

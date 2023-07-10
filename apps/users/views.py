@@ -1,33 +1,31 @@
-from datetime import datetime, timedelta, time, date
-from pytz import timezone as timez
+from datetime import date, datetime, time, timedelta
 
-
-from django.utils import timezone
-from django.db.models import Case, When, Value, BooleanField, Count
 from decouple import config
-from django.db.models import Max
+from django.db.models import BooleanField, Case, Count, Max, Value, When
 from django.http import HttpResponseNotAllowed
-
+from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
-
-
-from rest_framework.views import APIView
-from rest_framework import viewsets, status, serializers
-from rest_framework.response import Response
+from pytz import timezone as timez
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.booking.models import Booking
 from apps.booking.serializers import BookingSerializer
-
-from .permissions import IsOperatorOnline, OperatorIsNotBusy, IsRegistrator
-from .models import Profile
-from .serializers import ChangeNotes, GetByProps, GetServedCustomers, GetWindowsSerializer, ProfileSerializer
-from apps.qsystem.models import Customer, Waiting_List
-from apps.qsystem.serializers import CustomerSerializer, GetQueueCustomersSerializer, WaitingListSerializer, ShiftWindow
-from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
 from apps.branches.models import Branch, Window
+from apps.qsystem.models import Customer, Waiting_List
+from apps.qsystem.permissions import IsOperator, IsOperatorOfCustomer
+from apps.qsystem.serializers import (CustomerSerializer,
+                                      GetQueueCustomersSerializer, ShiftWindow,
+                                      WaitingListSerializer)
+from apps.reports.models import CustomerAction, OperatorAction
 
+from .models import Profile
+from .permissions import IsOperatorOnline, IsRegistrator, OperatorIsNotBusy
+from .serializers import (ChangeNotes, GetByProps, GetServedCustomers,
+                          GetWindowsSerializer, ProfileSerializer)
 from .tasks import cancel_ticket
 
 
@@ -224,7 +222,10 @@ class OperatorViewSet(viewsets.ModelViewSet):
         window.is_busy = True
         window.save()
         serializer = CustomerSerializer(customer)
-        return Response(serializer.data)
+
+        OperatorAction.objects.create(operator=self.request.user, action='started', event=f'Начал обслуживать талон {customer.ticket_number}')
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
     @action(detail=True, methods=['get'])
@@ -382,6 +383,10 @@ class OperatorViewSet(viewsets.ModelViewSet):
             c.position -= 1
             c.save()
 
+        OperatorAction.objects.create(operator=old_operator, action='shifted', event=f'Талон {customer.ticket_number} был переведен на {new_window.number} окно')
+        CustomerAction.objects.create(customer=customer, action='cancelled', event=f'Талон {customer.ticket_number} был переведен на {new_window.number} окно')
+
+
         return Response({'message': 'Талон успешно перенесен на другую очередь.'})
     
 
@@ -456,6 +461,10 @@ class OperatorViewSet(viewsets.ModelViewSet):
 
         queue.average_waiting_time = average_waiting_time
         queue.save()
+
+        OperatorAction.objects.create(operator=customer.operator, action='served', event=f'Обслужил талон {customer.ticket_number}')
+        CustomerAction.objects.create(customer=customer, action='served', event=f'Талон {customer.ticket_number} был обслужен')
+
         return Response({'message': 'Талон обслужен и среднее время обновлено'})
     
 
@@ -489,6 +498,10 @@ class OperatorViewSet(viewsets.ModelViewSet):
             if waiting_customer.position is not None and waiting_customer.position > current_position:
                 waiting_customer.position -= 1
                 waiting_customer.save()
+
+
+        OperatorAction.objects.create(operator=customer.operator, action='cancelled', event=f'Отменил талон {customer.ticket_number}')
+        CustomerAction.objects.create(customer=customer, action='cancelled', event=f'Талон {customer.ticket_number} был отменен')
 
         return Response({'message': 'Талон отменен.'})
 
@@ -650,4 +663,19 @@ class RegistratorViewSet(viewsets.ViewSet):
         bookings = Booking.objects.filter(queue__branch=pk, date__gte=today)
         serializer = BookingSerializer(bookings, many=True)
         return Response(serializer.data)
+    
+
+
+class ActionViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=['post'])
+    def come_in_system(self, request):
+        operator = self.request.user
+        OperatorAction.objects.create(operator=operator, action='come', event='Оператор вошел в систему')
+        return Response({'message': 'Протокол создан'}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'])
+    def out_of_system(self, request):
+        operator = self.request.user
+        OperatorAction.objects.create(operator=operator, action='out', event='Оператор вышел из системы')
+        return Response({'message': 'Протокол создан'}, status=status.HTTP_200_OK)
     

@@ -25,12 +25,28 @@ class OperatorDailyReport(models.Model):
 class OperatorAction(models.Model):
     operator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actions')
     created_at = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=150)
+    CHOICES = [
+        ('come', 'Вошел'),
+        ('out', 'Вышел'),
+        ('started', 'Начал Обслуживать'),
+        ('served', 'Обслужил'),
+        ('cancelled', 'Отменил'),
+        ('shifted', 'Перевел')
+    ]
+    action = models.CharField(max_length=150, choices=CHOICES)
+    event = models.CharField(max_length=150)
 
 
 class CustomerAction(models.Model):
-    Customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='actions')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='actions')
     created_at = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=150)
+    CHOICES = [
+        ('created', 'Создан'),
+        ('cancelled', 'Отменен'),
+        ('served', 'Обслужен'),
+        ('shifted', 'Перевен')
+    ]
+    action = models.CharField(max_length=150, choices=CHOICES)
+    event = models.CharField(max_length=150)
 
 

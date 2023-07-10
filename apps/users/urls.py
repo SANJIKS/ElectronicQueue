@@ -1,11 +1,11 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import ProfileView, OperatorViewSet, RegistratorViewSet
+from .views import ProfileView, OperatorViewSet, RegistratorViewSet, ActionViewSet
 
 router = routers.DefaultRouter()
 router.register(r'', OperatorViewSet, basename='operator')
 router.register(r'registrator', RegistratorViewSet, basename='registrator')
-
+router.register(r'actions', ActionViewSet, basename='actions')
 
 urlpatterns = [
     path('operator/', include(router.urls)),
