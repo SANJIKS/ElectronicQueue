@@ -126,7 +126,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return response
 
 
-
 class PrintingView(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         try:
@@ -186,6 +185,7 @@ class PrintingView(viewsets.ViewSet):
             'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer), 
         }
         return Response(ticket_data)  
+
 
 
 

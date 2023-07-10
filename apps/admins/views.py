@@ -5,13 +5,13 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 
-from apps.branches.models import Floor, Cabinet
+from apps.branches.models import Branch, Floor, Cabinet
 from apps.branches.serializers import CabinetSerializer, FloorSerializer
 from apps.admins.permissions import IsAdmin
 from apps.qsystem.models import Queue
 from apps.users.models import Profile
 from apps.users.serializers import ProfileSerializer
-from .serializers import ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime
+from .serializers import ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime, GetOnlineWindows
 
 User = get_user_model()
 
@@ -128,7 +128,18 @@ class AdminViewSet(viewsets.ViewSet):
         queue.auto_transfer = True
         queue.save()
         return Response({'message': 'Автоматический перенос в конец очереди включен'})
-    
+
+
+    @action(detail=False, methods=['get'])
+    def get_online_operators(self, request, *args, **kwargs):
+        admin = self.request.user
+        branch = Branch.objects.get(admin=admin)
+        operators = User.objects.filter(profile__position='operator', queues__branch=branch, window__is_online=True)
+
+        serializer = GetOnlineWindows(operators, many=True)
+        return Response(serializer.data, status=200)
+
+
 
 
 from rest_framework.views import APIView

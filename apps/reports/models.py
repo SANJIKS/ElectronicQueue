@@ -20,12 +20,3 @@ class OperatorDailyReport(models.Model):
         return f'Report for {self.operator.username} - {self.date}'
 
 
-class OperatorServedCustomerReport(models.Model):
-    operator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='served_reports')
-    datetime = models.DateTimeField()
-    served_time = models.TimeField()
-    operator_first_name = models.CharField(max_length=100, blank=True)
-    operator_last_name = models.CharField(max_length=100, blank=True)
-    operator_surname = models.CharField(max_length=100, blank=True)
-
-
