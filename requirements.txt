@@ -1,8 +1,8 @@
 amqp==5.1.1
 asgiref==3.7.2
+autobahn==21.3.1
 async-timeout==4.0.2
 attrs==23.1.0
-autobahn==23.6.2
 Automat==22.10.0
 billiard==4.1.0
 bleach==6.0.0
