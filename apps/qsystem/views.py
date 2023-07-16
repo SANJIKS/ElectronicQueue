@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from apps.branches.models import BaseCalendar, Calendar
-from apps.reports.models import CustomerAction
+from apps.report_apps.reports.models import CustomerAction
 
 from .models import Customer, Queue
 from .permissions import IsAdmin

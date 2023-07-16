@@ -34,7 +34,8 @@ urlpatterns = [
     path('', include('apps.branches.urls')),
     path('booking/', include('apps.booking.urls')),
     path('admins/', include('apps.admins.urls')),
-    path('reports/', include('apps.reports.urls')),
+    # path('reports/', include('apps.reports.urls')),
+    path('', include('apps.report_apps.operator_reports.urls'))
 ]
 
 if settings.DEBUG:

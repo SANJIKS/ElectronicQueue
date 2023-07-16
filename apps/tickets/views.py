@@ -8,11 +8,11 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.reports.models import OperatorAction, CustomerAction
+from apps.report_apps.reports.models import OperatorAction, CustomerAction
 from apps.booking.models import Booking
 from apps.booking.serializers import BookingSerializer
 from apps.branches.models import Branch, Window
-from apps.qsystem.models import Customer, Queue, Waiting_List
+from apps.qsystem.models import Customer, Waiting_List
 from apps.qsystem.serializers import (CustomerSerializer,
                                       GetQueueCustomersSerializer,
                                       WaitingListSerializer)

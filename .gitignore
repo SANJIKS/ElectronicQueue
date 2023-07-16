@@ -147,6 +147,10 @@ static/
 code/
 
 backups/
+reports/
+celerybeat-schedule
+chart.png
+graph.png
 
 # Spyder project settings
 .spyderproject

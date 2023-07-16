@@ -22,8 +22,8 @@ from apps.users.models import Profile
 from apps.users.serializers import ProfileSerializer
 from apps.branches.models import Branch
 
-from apps.reports.models import CustomerAction, OperatorAction
-from apps.reports.serializers import (CustomerActionSerializer,
+from apps.report_apps.reports.models import CustomerAction, OperatorAction
+from apps.report_apps.reports.serializers import (CustomerActionSerializer,
                                       OperatorActionSerializer)
 from .serializers import (ChangeMaxCalls,
                           ChangeMaxTransfers, ChangePrintTime,

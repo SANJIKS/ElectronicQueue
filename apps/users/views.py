@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from apps.qsystem.models import Customer
 from apps.qsystem.serializers import CustomerSerializer
-from apps.reports.models import OperatorAction
+from apps.report_apps.reports.models import OperatorAction
 
 from .models import Profile
 from .serializers import ProfileSerializer
