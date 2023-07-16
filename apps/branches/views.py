@@ -11,25 +11,38 @@ from .serializers import BaseCalendarSerializer, CalendarSerializer, RegionSeria
 from .models import BaseCalendar, Region, Branch, Window, Calendar
 from apps.qsystem.models import Queue, Services
 from apps.qsystem.serializers import QueueSerializer
+from apps.branches.models import Branch, Cabinet, Floor
+from apps.branches.serializers import CabinetSerializer, FloorSerializer
     
 
 class WindowViewSet(ModelViewSet):
     queryset = Window.objects.all()
     serializer_class = WindowSerializer
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
+
+class FloorViewSet(ModelViewSet):
+    queryset = Floor.objects.all()
+    serializer_class = FloorSerializer
+    permission_classes = [IsAdmin]
+
+
+class CabinetViewSet(ModelViewSet):
+    queryset = Cabinet.objects.all()
+    serializer_class = CabinetSerializer
+    permission_classes = [IsAdmin]
 
 
 class CalendarViewSet(ModelViewSet):
     queryset = Calendar.objects.all()
     serializer_class = CalendarSerializer
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
 
 class BaseCalendarViewSet(ModelViewSet):
     queryset = BaseCalendar.objects.all()
     serializer_class = BaseCalendarSerializer
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
 
 """ RegionViewSet является представлением модели Region

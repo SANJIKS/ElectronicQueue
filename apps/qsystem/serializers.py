@@ -13,11 +13,6 @@ User = get_user_model()
 
 today = datetime.now().astimezone(timezone('Asia/Bishkek'))
 
-#Сериализатор для передачи талона в другое окно
-class ShiftWindow(serializers.Serializer):
-    window = serializers.CharField()
-
-
 #Сериализатор очередей
 class QueueSerializer(serializers.ModelSerializer):
     class Meta:

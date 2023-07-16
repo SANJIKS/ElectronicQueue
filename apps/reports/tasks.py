@@ -1,6 +1,6 @@
 import datetime
 from django.contrib.auth.models import User
-from .models import OperatorReport
+from .models import OperatorDailyReport
 from apps.qsystem.models import Customer
 from celery import shared_task
 
@@ -43,7 +43,7 @@ def generate_operator_report():
             min_time = 0
 
         # Создаем отчет оператора
-        OperatorReport.objects.create(
+        OperatorDailyReport.objects.create(
             operator=operator,
             date=today,
             total_served=total_served,

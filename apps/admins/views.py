@@ -1,35 +1,35 @@
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.contrib.auth import get_user_model
-from djoser.serializers import UserSerializer
-
+import os
 from datetime import datetime
 from pytz import timezone as timez
 
+from djoser.serializers import UserSerializer
+from django.contrib.auth import get_user_model
 
-from apps.branches.models import Branch, Floor, Cabinet
-from apps.branches.serializers import CabinetSerializer, FloorSerializer
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from django.core.management import call_command
+from django.conf import settings
+
 from apps.admins.permissions import IsAdmin
 from apps.qsystem.models import Queue
 from apps.users.models import Profile
 from apps.users.serializers import ProfileSerializer
-from .serializers import BackupsSerializer, ChangeMaxCalls, ChangeMaxTransfers, ChangePrintTime, ChangeWaitingTime, GetOnlineWindows
+from apps.branches.models import Branch
+
+from apps.reports.models import CustomerAction, OperatorAction
+from apps.reports.serializers import (CustomerActionSerializer,
+                                      OperatorActionSerializer)
+from .serializers import (ChangeMaxCalls,
+                          ChangeMaxTransfers, ChangePrintTime,
+                          ChangeWaitingTime, GetOnlineWindows)
 
 User = get_user_model()
-
-class FloorViewSet(viewsets.ModelViewSet):
-    queryset = Floor.objects.all()
-    serializer_class = FloorSerializer
-    permission_classes = [IsAdmin]
-
-
-class CabinetViewSet(viewsets.ModelViewSet):
-    queryset = Cabinet.objects.all()
-    serializer_class = CabinetSerializer
-    permission_classes = [IsAdmin]
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -85,6 +85,7 @@ class AdminViewSet(viewsets.ViewSet):
         queue.print_end = end
         queue.save()
         return Response(status=status.HTTP_200_OK)
+    
     
     @action(detail=True, methods=['post'])
     def block_queues(self, request, *args, **kwargs):
@@ -144,11 +145,6 @@ class AdminViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
 
 
-
-
-from rest_framework.views import APIView
-from django.conf import settings
-
 class TCPConfigView(APIView):
     def get(self, request):
         return Response({"tcp_port": settings.TCP_PORT})
@@ -162,17 +158,7 @@ class TCPConfigView(APIView):
             return Response({"error": "TCP port not provided."}, status=400)
 
 
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet
-from dbbackup import utils
-from django.core.management import call_command
-from django.core.management import CommandError
-from drf_yasg import openapi
-import os
-
-
-class BackupViewSet(ViewSet):
+class BackupViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -246,10 +232,7 @@ class BackupViewSet(ViewSet):
         return Response(backups, status=status.HTTP_200_OK)
 
 
-from apps.reports.models import OperatorAction, CustomerAction
-from apps.reports.serializers import CustomerActionSerializer, OperatorActionSerializer
-
-class ProtocolView(ViewSet):
+class ProtocolView(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def get_operator_actions(self, request):
         admin = self.request.user
