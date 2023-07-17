@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.qsystem.models import Customer
-from .models import OperatorDailyReport, OperatorAction, CustomerAction
+from .models import OperatorDailyReport, OperatorAction
 
 class OperatorReportSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,13 +12,5 @@ class OperatorReportSerializer(serializers.ModelSerializer):
 class OperatorActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = OperatorAction
-        fields = '__all__'
-        read_only_fields = ('id',)
-
-
-
-class CustomerActionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomerAction
         fields = '__all__'
         read_only_fields = ('id',)

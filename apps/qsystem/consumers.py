@@ -3,10 +3,10 @@ from datetime import date
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer, WebsocketConsumer
 
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
 
-User = get_user_model()
+# User = get_user_model()
 
 from .models import Customer
 
@@ -15,6 +15,8 @@ from asgiref.sync import sync_to_async
 
 class TicketConsumer(AsyncWebsocketConsumer):
     def getUser(self, userId):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
         return User.objects.get(id=userId)
 
     async def connect(self):

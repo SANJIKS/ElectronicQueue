@@ -27,13 +27,16 @@ urlpatterns = [
     path('user/', include('djoser.urls')),
     path('login/', include('djoser.urls.jwt')),
     path('', include('apps.users.urls')),
+    path('tickets/', include('apps.tickets.urls')),
     path('', schema_view.with_ui('swagger',
          cache_timeout=0), name='schema-swagger-ui'),
     path('', include('apps.qsystem.urls')),
     path('', include('apps.branches.urls')),
     path('booking/', include('apps.booking.urls')),
     path('admins/', include('apps.admins.urls')),
-    path('reports/', include('apps.reports.urls')),
+    # path('reports/', include('apps.reports.urls')),
+    path('reports/', include('apps.report_apps.operator_reports.urls')),
+    path('reports/', include('apps.report_apps.customer_reports.urls')),
 ]
 
 if settings.DEBUG:

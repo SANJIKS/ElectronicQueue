@@ -1,26 +1,20 @@
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, timedelta
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from decouple import config
-from django.db.models import BooleanField, Case, Count, Max, Value, When
 from django.urls import reverse
-from django.utils import timezone
-from django.utils.text import slugify
-from drf_yasg.utils import swagger_auto_schema
-from pytz import timezone as timez
-from rest_framework import permissions, serializers, status, viewsets
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
-from apps.branches.models import BaseCalendar, Calendar, Window
-from apps.reports.models import CustomerAction
+from apps.branches.models import BaseCalendar, Calendar
+from apps.report_apps.customer_reports.models import CustomerAction
 
-from .models import Customer, Queue, Waiting_List
-from .permissions import IsAdmin, IsOperator, IsOperatorOfCustomer
-from .serializers import (CustomerSerializer, GetQueueCustomersSerializer,
-                          QueueSerializer, ShiftWindow, WaitingListSerializer)
+from .models import Customer, Queue
+from .permissions import IsAdmin, IsAdminOfHisBranch
+from .serializers import CustomerSerializer, QueueSerializer
 
 
 class QueueViewSet(viewsets.ModelViewSet):
@@ -30,6 +24,8 @@ class QueueViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'get_documents':
             return [permissions.AllowAny()]
+        elif self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
         else:
             return [IsAdmin()]
 
@@ -54,25 +50,8 @@ class QueueViewSet(viewsets.ModelViewSet):
 
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
-    queryset = Customer.objects.filter(created_at__date=date.today()).order_by('created_at')
-
-    def get_serializer_class(self):
-        if self.action == 'change_status' or self.action == 'mark_as_cancelled' or self.action == 'mark_as_served' or self.action == 'start':
-            return serializers.Serializer
-        elif self.action == 'shift_window':
-            return ShiftWindow
-        else:    
-            return super().get_serializer_class()
-
-
-    def get_permissions(self):
-        a = self.action
-        if a in ['get_customers_in_queue', 'get_waiting_list', 'start', 'shift_list', 'call', 'move_to_the_end']:
-            return [IsOperator()]
-        elif a in ['mark_as_served', 'mark_as_cancelled', 'shift_window']:
-            return [IsOperator(), IsOperatorOfCustomer()]
-        return super().get_permissions()
-
+    queryset = Customer.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_context(self):
         context = super().get_serializer_context() 
@@ -99,19 +78,14 @@ class CustomerViewSet(viewsets.ModelViewSet):
         if holiday.exists():
             return Response({'error': 'В этот день филиал не работет!'}, status=400)
         
-
-
         self.perform_create(serializer)
 
-        # Получение ID созданного объекта Customer
         customer_id = serializer.instance.id
 
-        # Формирование URL для перенаправления
         redirect_url = config("BASE_URL")+reverse('printing-detail', args=[customer_id])  # 'printing-detail' - имя URL-маршрута, customer_id - аргумент
 
         headers = self.get_success_headers(serializer.data)
         response = Response({'customer_id': customer_id, 'redirect_url': redirect_url}, status=201, headers=headers)
-
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -121,7 +95,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 "event": {},  
             }
         )
-        
 
         action = Customer.objects.get(pk=customer_id)
         CustomerAction.objects.create(customer=action, action='created', event=f'Создан талон {action.ticket_number}')
@@ -153,8 +126,24 @@ class PrintingView(viewsets.ViewSet):
         if customer.is_served is not None:
             return Response({'error': 'Невозможно распечатать талон, т.к. он уже обслужен'}, status=403)
 
+        ticket_data = {
+            'ID': customer.pk,
+            'Номер талона': customer.ticket_number,
+            'Очередь': customer.queue.name,
+            'Тип услуги': customer.queue.services.name, 
+            'Позиция': customer.position,
+            'Выдано': customer.created_at,  
+            'Имя посетителя': f'{customer.first_name} {customer.last_name} {customer.surname}',
+            'Статус': customer.is_served, 
+            'Наименование организации': 'RSK',
+            'Филиал': customer.queue.branch.street,
+            # 'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=None, ticket_number__lt=customer.ticket_number).count(),  
+            'Примерное время ожидания': self.calculate_estimated_wait_time(self, customer.queue, customer), 
+        }
+        return Response(ticket_data)  
+    
 
-        def calculate_estimated_wait_time(queue, customer):
+    def calculate_estimated_wait_time(self, queue, customer):
             ahead_customers = Customer.objects.filter(queue=queue, is_served=None, position__lt=customer.position)
             average_waiting_time = queue.average_waiting_time or 0
 
@@ -173,20 +162,5 @@ class PrintingView(viewsets.ViewSet):
 
             return time_remaining_str
 
-        ticket_data = {
-            'ID': customer.pk,
-            'Номер талона': customer.ticket_number,
-            'Очередь': customer.queue.name,
-            'Тип услуги': customer.queue.services.name, 
-            'Позиция': customer.position,
-            'Выдано': customer.created_at,  
-            'Имя посетителя': f'{customer.first_name} {customer.last_name} {customer.surname}',
-            'Статус': customer.is_served, 
-            'Наименование организации': 'RSK',
-            'Филиал': customer.queue.branch.street,
-            # 'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=None, ticket_number__lt=customer.ticket_number).count(),  
-            'Примерное время ожидания': calculate_estimated_wait_time(customer.queue, customer), 
-        }
-        return Response(ticket_data)  
 
 

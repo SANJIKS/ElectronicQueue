@@ -1,35 +1,75 @@
-from rest_framework.viewsets import ModelViewSet
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 
 from apps.admins.permissions import IsAdmin
-
-from .serializers import BaseCalendarSerializer, CalendarSerializer, RegionSerializer, BranchSerializer, WindowSerializer
-from .models import BaseCalendar, Region, Branch, Window, Calendar
+from apps.branches.models import Branch, Cabinet, Floor
+from apps.branches.serializers import CabinetSerializer, FloorSerializer
 from apps.qsystem.models import Queue, Services
+from apps.qsystem.permissions import IsAdmin, IsAdminOfHisBranch
 from apps.qsystem.serializers import QueueSerializer
-    
+
+from .models import BaseCalendar, Branch, Calendar, Region, Window
+from .serializers import (BaseCalendarSerializer, BranchSerializer,
+                          CalendarSerializer, RegionSerializer,
+                          WindowSerializer)
+
 
 class WindowViewSet(ModelViewSet):
+    def get_permissions(self):
+        if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
+        else:
+            return [IsAdmin()]
+
     queryset = Window.objects.all()
     serializer_class = WindowSerializer
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
+
+class FloorViewSet(ModelViewSet):
+    def get_permissions(self):
+        if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
+        else:
+            return [IsAdmin()]
+
+    queryset = Floor.objects.all()
+    serializer_class = FloorSerializer
+    permission_classes = [IsAdmin]
+
+
+class CabinetViewSet(ModelViewSet):
+    def get_permissions(self):
+        if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
+        else:
+            return [IsAdmin()]
+
+    queryset = Cabinet.objects.all()
+    serializer_class = CabinetSerializer
+    permission_classes = [IsAdmin]
 
 
 class CalendarViewSet(ModelViewSet):
+    def get_permissions(self):
+        if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
+        else:
+            return [IsAdmin()]
+
     queryset = Calendar.objects.all()
     serializer_class = CalendarSerializer
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
 
 class BaseCalendarViewSet(ModelViewSet):
     queryset = BaseCalendar.objects.all()
     serializer_class = BaseCalendarSerializer
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
 
 """ RegionViewSet является представлением модели Region
@@ -59,6 +99,13 @@ class RegionViewSet(ModelViewSet):
 class BranchViewSet(ModelViewSet):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
+
+    def get_permissions(self):
+        if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
+        else:
+            return [IsAdmin()]
+
 
     @action(detail=True, methods=['get'])
     def get_service_types(self, request, pk=None):
