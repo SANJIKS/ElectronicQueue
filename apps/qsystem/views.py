@@ -10,10 +10,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from apps.branches.models import BaseCalendar, Calendar
-from apps.report_apps.reports.models import CustomerAction
+from apps.report_apps.customer_reports.models import CustomerAction
 
 from .models import Customer, Queue
-from .permissions import IsAdmin
+from .permissions import IsAdmin, IsAdminOfHisBranch
 from .serializers import CustomerSerializer, QueueSerializer
 
 
@@ -24,6 +24,8 @@ class QueueViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'get_documents':
             return [permissions.AllowAny()]
+        elif self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
+            return [IsAdmin(),IsAdminOfHisBranch()]
         else:
             return [IsAdmin()]
 

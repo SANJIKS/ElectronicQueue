@@ -26,7 +26,7 @@ from rest_framework.viewsets import ViewSet
 
 from apps.qsystem.models import Customer
 
-from apps.report_apps.reports.models import OperatorDailyReport
+from .models import OperatorDailyReport
 
 
 class OperatorHourReportPDFView(APIView):

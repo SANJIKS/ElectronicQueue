@@ -8,7 +8,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.report_apps.reports.models import OperatorAction, CustomerAction
+from apps.report_apps.operator_reports.models import OperatorAction
+from apps.report_apps.customer_reports.models import CustomerAction
 from apps.booking.models import Booking
 from apps.booking.serializers import BookingSerializer
 from apps.branches.models import Branch, Window
@@ -20,7 +21,7 @@ from apps.qsystem.serializers import (CustomerSerializer,
 from .permissions import IsOperatorOffline, IsOperatorOfCustomer, OperatorIsNotBusy, IsRegistrator, IsOperator
 from .serializers import (ChangeNotes, GetByProps, GetServedCustomers,
                           GetWindowsSerializer)
-from .tasks import calculate_average_waiting_time, cancel_ticket, shift_lower_positions, shift_positions
+from .tasks import calculate_average_waiting_time, cancel_ticket, shift_positions
 
 today = datetime.now().astimezone(timez('Asia/Bishkek'))
 
@@ -204,7 +205,7 @@ class OperatorViewSet(viewsets.ViewSet):
 
         queue = customer.queue.pk
         current_position = customer.position 
-        shift_lower_positions.delay(pk, queue, current_position)
+        shift_positions.delay(pk, queue, current_position)
 
         customer = Customer.objects.get(pk=pk)
         customer.position = Customer.objects.filter(queue=queue, created_at__date=today, is_served=None).count() + 1

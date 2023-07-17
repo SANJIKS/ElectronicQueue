@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.booking',
     'apps.admins',
-    'apps.report_apps.reports',
     'apps.report_apps.operator_reports',
     'apps.report_apps.customer_reports',
     'apps.tickets',
@@ -274,13 +273,13 @@ CELERY_BROKER_URL = "redis://localhost:6379"
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
 
 CELERY_BEAT_SCHEDULE = {
-    'check_func_task': {
-        'task': 'apps.branches.tasks.check_func',
-        'schedule': crontab(hour=23, minute=59),
+    'refresh': {
+        'task': 'apps.branches.tasks.refresh',
+        'schedule': crontab(hour=23, minute=50),
     },
     'generate_operator_report': {
-        'task': 'apps.reports.tasks.generate_operator_report',
-        'schedule': crontab(hour=15, minute=6),  
+        'task': 'apps.report_apps.operator_reports.tasks.generate_operator_report',
+        'schedule': crontab(hour=23, minute=50),  
     },
 }
 

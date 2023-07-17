@@ -51,13 +51,6 @@ def shift_positions(pk, queue, current_position):
             other_customer.position -= 1
             other_customer.save()
 
-@shared_task
-def shift_lower_positions(pk, queue, current_position):
-    other_customers = Customer.objects.filter(queue=queue, created_at__date=today, position__gt=current_position).exclude(pk=pk)
-    for other_customer in other_customers:
-        if other_customer.position is not None and other_customer.position < current_position:
-            other_customer.position -= 1
-            other_customer.save()
 
 @shared_task
 def calculate_average_waiting_time(queue_id):
