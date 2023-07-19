@@ -1,7 +1,8 @@
-from rest_framework import serializers, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from apps.admins.permissions import IsAdmin
 
 from apps.qsystem.models import Customer
 from apps.qsystem.serializers import CustomerSerializer
@@ -12,7 +13,7 @@ from .serializers import ProfileSerializer
 
 
 class ProfileView(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
         profile = Profile.objects.get(user=request.user)
@@ -48,6 +49,13 @@ class ProfileView(viewsets.ViewSet):
         tickets = Customer.objects.filter(first_name=first_name, last_name=last_name, surname=surname)  # Получение всех талонов пользователя
 
         serializer = CustomerSerializer(tickets, many=True)  
+        return Response(serializer.data)
+
+
+    @action(detail=True, methods=['get'])
+    def get_retrieve(self, request, pk=None):
+        profile = Profile.objects.get(pk=pk)
+        serializer = ProfileSerializer(profile)
         return Response(serializer.data)
     
 

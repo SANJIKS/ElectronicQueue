@@ -281,10 +281,16 @@ class OperatorGetViewSet(viewsets.ViewSet):
         if not queue:
             return Response({'error': 'Сотрудник не привязан к очереди'}, status=404)
 
-        queryset = Customer.objects.filter(queue__in=queue, is_served=None, created_at__date=today, old_operator=None).order_by('position')
+        queryset = Customer.objects.filter(queue__in=queue, is_served=None, created_at__date=today, old_operator=None, operator=None).order_by('position')
         
         serializer = GetQueueCustomersSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=200)
+
+    @action(detail=False, methods=['get'])
+    def get_my_customer(self, request):
+        queryset = Customer.objects.get(operator=self.request.user, is_served=None, served_start__date=today)
+        serializer = CustomerSerializer(queryset)
+        return Response(serializer.data, status=200)
     
 
     @action(detail=False, methods=['get'])

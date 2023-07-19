@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -103,6 +103,8 @@ class BranchViewSet(ModelViewSet):
     def get_permissions(self):
         if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
             return [IsAdmin(),IsAdminOfHisBranch()]
+        elif self.action == 'get_service_types':
+            return [AllowAny()]
         else:
             return [IsAdmin()]
 

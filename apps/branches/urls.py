@@ -9,7 +9,7 @@ router.register('branch/calendar', CalendarViewSet)
 router.register('branches/basecalendar', BaseCalendarViewSet)
 router.register('branch/floor', FloorViewSet)
 router.register('branch/cabinet', CabinetViewSet)
-router.register('branches/', BranchViewSet)
+router.register('branches', BranchViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

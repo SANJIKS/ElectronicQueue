@@ -12,6 +12,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from django.core.management import call_command
 from django.conf import settings
@@ -41,6 +42,11 @@ class UserViewSet(viewsets.ModelViewSet):
 class UsersProfileViewSet(viewsets.ViewSet):
     permission_classes = [IsAdmin]
     
+    def get_permissions(self):
+        if self.action == 'get':
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
     def get(self, request):
         profile = Profile.objects.get(user=request.user)
         serializer = ProfileSerializer(profile)
@@ -61,6 +67,13 @@ class UsersProfileViewSet(viewsets.ViewSet):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+    
+
+    @action(detail=True, methods=['get'])
+    def get_retrieve(self, request, pk=None):
+        profile = Profile.objects.get(pk=pk)
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data)
 
 
 class AdminViewSet(viewsets.ViewSet):
@@ -240,8 +253,7 @@ class ProtocolView(viewsets.ViewSet):
         branch = Branch.objects.get(admin=admin)
         today = datetime.now().astimezone(timez('Asia/Bishkek'))
 
-        actions = OperatorAction.objects.filter(operator__queues__branch=branch, created_at__date=today)
-        actions = {i for i in actions}
+        actions = set(OperatorAction.objects.filter(operator__queues__branch=branch, created_at__date=today))
         serializer = OperatorActionSerializer(actions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -252,7 +264,6 @@ class ProtocolView(viewsets.ViewSet):
         branch = Branch.objects.get(admin=admin)
         today = datetime.now().astimezone(timez('Asia/Bishkek'))
 
-        actions = CustomerAction.objects.filter(customer__queue__branch=branch, created_at__date=today)
-        actions = {i for i in actions}
+        actions = set(CustomerAction.objects.filter(customer__queue__branch=branch, created_at__date=today))
         serializer = CustomerActionSerializer(actions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

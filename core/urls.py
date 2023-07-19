@@ -26,7 +26,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('user/', include('djoser.urls')),
     path('login/', include('djoser.urls.jwt')),
-    path('', include('apps.users.urls')),
+    path('profile/', include('apps.users.urls')),
     path('tickets/', include('apps.tickets.urls')),
     path('', schema_view.with_ui('swagger',
          cache_timeout=0), name='schema-swagger-ui'),

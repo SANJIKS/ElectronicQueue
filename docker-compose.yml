@@ -52,18 +52,6 @@ services:
     ports:
       - "80:80"
 
-  daphne:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - api
-    command: daphne -b 0.0.0.0 -p 8001 /app/core.asgi:application 
-    ports:
-      - "8001:8001"
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
 
 volumes:
   static_volume:
