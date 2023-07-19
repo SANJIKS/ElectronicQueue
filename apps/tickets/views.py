@@ -208,7 +208,7 @@ class OperatorViewSet(viewsets.ViewSet):
         shift_positions.delay(pk, queue, current_position)
 
         customer = Customer.objects.get(pk=pk)
-        customer.position = Customer.objects.filter(queue=queue, created_at__date=today, is_served=None).count() + 1
+        customer.position = Customer.objects.filter(queue=queue, created_at__date=today, is_served=None).count()
         customer.save()
 
         return Response({'message': 'Талон перемещен в конец очереди.'})

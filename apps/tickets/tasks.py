@@ -29,7 +29,7 @@ def cancel_ticket(customer_id):
                     other_customer.save()     
         else:    
             current_position = customer.position
-            customer.position = queue.customers.count() + 1
+            customer.position = queue.customers.count() 
             customer.save()
 
             other_customers = Customer.objects.filter(queue=queue, created_at__date=today, position__gt=current_position).exclude(pk=customer_id)
