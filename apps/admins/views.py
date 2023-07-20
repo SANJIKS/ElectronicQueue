@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 from pytz import timezone as timez
-import subprocess
 
 from djoser.serializers import UserSerializer
 from django.contrib.auth import get_user_model
@@ -17,6 +16,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.core.management import call_command
 from django.conf import settings
+
+from decouple import config
 
 from apps.admins.permissions import IsAdmin
 from apps.qsystem.models import Queue
@@ -242,8 +243,11 @@ class BackupViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['get'])
     def get_backups(self, request):
+        backup_name_prefix = 'your_prefix'  # Замените на своё имя или название ПК
         backups = os.listdir('backups')
-        return Response(backups, status=status.HTTP_200_OK)
+        filtered_backups = [backup for backup in backups if not backup.startswith(backup_name_prefix)]
+        trimmed_backups = [backup.replace('.psql.bin', '') for backup in filtered_backups]
+        return Response(trimmed_backups, status=status.HTTP_200_OK)
 
 
 class ProtocolView(viewsets.ViewSet):
