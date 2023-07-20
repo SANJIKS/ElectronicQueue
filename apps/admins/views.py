@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from pytz import timezone as timez
+import subprocess
 
 from djoser.serializers import UserSerializer
 from django.contrib.auth import get_user_model
@@ -234,11 +235,10 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'error': 'Backup file does not exist'}, status=400)
 
         try:
-            call_command('dbrestore', input_filename=backup_path)
+            call_command('dbrestore', input_filename=backup_path, interactive=False)
             return Response({'message': 'Database restored successfully'})
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
-        
+            return Response({'error': str(e)}, status=500)        
     
     @action(detail=False, methods=['get'])
     def get_backups(self, request):
