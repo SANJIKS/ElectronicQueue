@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+
 from apps.branches.models import Branch
 from apps.branches.models import Window
 
@@ -97,6 +98,3 @@ class Waiting_List(models.Model):
         verbose_name = 'Лист ожидания'  
         verbose_name_plural = 'Лист ожидания'  
 
-
-
-    

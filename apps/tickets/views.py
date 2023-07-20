@@ -8,6 +8,10 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
 from apps.report_apps.operator_reports.models import OperatorAction
 from apps.report_apps.customer_reports.models import CustomerAction
 from apps.booking.models import Booking
