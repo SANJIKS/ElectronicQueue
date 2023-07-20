@@ -1,9 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from apps.branches.models import Branch, Terminal
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from django.utils import timezone
+from apps.branches.models import Branch
 from apps.branches.models import Window
 
 User = get_user_model()

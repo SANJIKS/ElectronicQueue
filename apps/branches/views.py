@@ -12,10 +12,26 @@ from apps.qsystem.models import Queue, Services
 from apps.qsystem.permissions import IsAdmin, IsAdminOfHisBranch
 from apps.qsystem.serializers import QueueSerializer
 
-from .models import BaseCalendar, Branch, Calendar, Region, Window
+from .models import BaseCalendar, Branch, Calendar, Region, Window, Board, Ad
 from .serializers import (BaseCalendarSerializer, BranchSerializer,
                           CalendarSerializer, RegionSerializer,
-                          WindowSerializer)
+                          WindowSerializer, BoardSerializer, AdSerializer)
+
+
+class AdViewSet(ModelViewSet):
+    queryset = Ad.objects.all()
+    serializer_class = AdSerializer
+
+class BoardViewSet(ModelViewSet):
+    queryset = Board.objects.all()
+    serializer_class = BoardSerializer
+
+    @action(detail=True, methods=['GET'])
+    def ads(self, request, pk=None):
+        board = self.get_object()
+        ads = board.ads.all()
+        serializer = AdSerializer(ads, many=True)
+        return Response(serializer.data)
 
 
 class WindowViewSet(ModelViewSet):

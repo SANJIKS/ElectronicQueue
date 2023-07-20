@@ -37,17 +37,20 @@ class Branch(models.Model):
         verbose_name_plural = 'Филиалы' 
 
 
-#Модель Терминала
-class Terminal(models.Model):
-    number = models.PositiveSmallIntegerField()  # Поле для хранения номера терминала
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, null=True, blank=True, related_name='terminals')  # Внешний ключ для связи с моделью филиала
+class Board(models.Model):
+    number = models.IntegerField()
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='boards')
+    text_size = models.CharField(max_length=100)
+    text = models.TextField()
+    сoursive = models.BooleanField(default=False)
+    italic = models.BooleanField(default=False)
+    bold = models.BooleanField(default=False)
+    speed = models.IntegerField(default=2)
 
-    def __str__(self):
-        return f"Терминал {self.number}"
-    
-    class Meta:
-        verbose_name = 'Терминал' 
-        verbose_name_plural = 'Терминалы'
+class Ad(models.Model):
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='ads')
+    content_type = models.CharField(max_length=10, choices=[('photo', 'Photo'), ('video', 'Video')])
+    content = models.FileField(upload_to='ad_contents/')
 
 
 class Floor(models.Model):

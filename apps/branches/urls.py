@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import RegionViewSet, BranchViewSet, ServiceQueueAPIView, WindowViewSet, CalendarViewSet, BaseCalendarViewSet, FloorViewSet, CabinetViewSet
+from .views import AdViewSet, BoardViewSet, RegionViewSet, BranchViewSet, ServiceQueueAPIView, WindowViewSet, CalendarViewSet, BaseCalendarViewSet, FloorViewSet, CabinetViewSet
 
 router = routers.DefaultRouter()
 router.register('branches/region', RegionViewSet)
@@ -10,6 +10,8 @@ router.register('branches/basecalendar', BaseCalendarViewSet)
 router.register('branch/floor', FloorViewSet)
 router.register('branch/cabinet', CabinetViewSet)
 router.register('branches', BranchViewSet)
+router.register('boards', BoardViewSet)
+router.register('ads', AdViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
