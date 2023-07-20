@@ -13,7 +13,7 @@ SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split()
+ALLOWED_HOSTS = config('ALLOWED_HOSTS','').split(',')
 
 
 # Application definition
@@ -96,7 +96,10 @@ ASGI_APPLICATION = 'core.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+#	"CONFIG": {
+#            "hosts": [("127.0.0.1", 6379)],  # Указать соответствующие настройки для вашего Redis сервера
+#        },
     }
 }
 
