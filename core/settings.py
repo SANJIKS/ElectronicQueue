@@ -85,6 +85,10 @@ TEMPLATES = [
     },
 ]
 
+#cookies
+
+SESSION_COOKIE_SECURE = False
+
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
@@ -145,7 +149,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 
 STATIC_URL = '/static/'
@@ -203,10 +206,14 @@ DJOSER = {
     'SERIALIZERS': {},
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
     'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:8000',
 ]
 
 
