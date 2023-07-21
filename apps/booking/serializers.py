@@ -35,22 +35,14 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation =  super().to_representation(instance)
-
-        # user_id = representation['user']
-        # user = User.objects.get(id=user_id)
-        # username = user.username
-        # first_name = user.profile.first_name
-        # last_name = user.profile.last_name
-        # surname = user.profile.surname
-
-        # representation['user'] = username  # Замена идентификатора пользователя на его имя пользователя
-        # representation['first_name'] = first_name  # Добавление имени пользователя 
-        # representation['last_name'] = last_name  # Добавление фамилии пользователя 
         # representation['surname'] = surname  # Добавление отчества пользователя 
 
         queue = Queue.objects.get(pk=representation['queue'])  # Получение объекта очереди
 
-        representation['branch'] = queue.branch.name  # Добавление названия филиала 
-        representation['service'] = queue.services.name  # Добавление названия услуги 
-
+        try:
+            representation['branch'] = queue.branch.name  # Добавление названия филиала 
+            representation['service'] = queue.services.name  # Добавление названия услуги 
+        except:
+            representation['branch'] = None
+            representation['service'] = None
         return representation

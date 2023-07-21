@@ -41,19 +41,16 @@ class BookingViewSet(viewsets.ModelViewSet):
         Эндпоинт для предварительной записи в очередь
         Нужно передь ID очереди, дату и время 
         """
-        serializer = self.get_serializer(data=request.data) 
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        time = serializer.validated_data.get('time')  # Извлечение времени из валидированных данных
-        date_ = serializer.validated_data.get('date')  # Извлечение даты из валидированных данных
-        queue = serializer.validated_data.get('queue')  # Извлечение очереди из валидированных данных
-        first_name = serializer.validated_data.get('first_name')
-        last_name = serializer.validated_data.get('last_name')
-        surname = serializer.validated_data.get('surname')
+        time = serializer.validated_data.get('time', timezone.now().time())
+        date_ = serializer.validated_data.get('date', timezone.now().date())
+        queue = serializer.validated_data.get('queue')
 
         branch = queue.branch
 
-        if queue.is_blocked == True:
+        if queue.is_blocked:
             return Response({'error': 'В данный момент очередь недоступна!'}, status=400)
 
         base_holiday = BaseCalendar.objects.filter(date=date_)
@@ -64,45 +61,44 @@ class BookingViewSet(viewsets.ModelViewSet):
         if holiday.exists():
             return Response({'error': 'В этот день филиал не работает!'}, status=400)
 
+        user = self.request.user
 
-        user_bookings = Booking.objects.filter(first_name=first_name, last_name=last_name, surname=surname, date=date_).exists() # Проверка наличия бронирований пользователя на выбранную дату
+        user_bookings = Booking.objects.filter(user=user, date=date_).exists()
 
-        if time < branch.schedule_start or time > branch.schedule_end: # Проверка, что выбранное время находится в рабочем расписании филиала
+        if not time or time < branch.schedule_start or time > branch.schedule_end:
             return Response(
-                {'error': 'Филиал не работает в это время.'},
+                {'error': 'Неверное время или филиал не работает в это время.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if user_bookings: # Если у пользователя уже есть бронирование на выбранную дату
+        if user_bookings:
             return Response(
                 {'error': 'Вы уже записывались в этот день!'}
             )
-        
-        existing_booking = Booking.objects.filter(time=time, date=date_).exists() # Проверка на наличие брони на ту же дату и время
+
+        existing_booking = Booking.objects.filter(user=user, time=time, date=date_).exists()
 
         if existing_booking:
             return Response(
                 {'error': 'Это время занято!'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        current_date = date.today()
-        current_time = datetime.now().time()
-        if date_ < current_date or (date_ == current_date and time < current_time): # Проверка, что выбранная дата и время не являются прошлыми
+
+        current_date = timezone.now().date()
+        current_time = timezone.now().time()
+        if date_ < current_date or (date_ == current_date and time < current_time):
             return Response(
                 {'error': 'Вы не можете записаться на прошедшую дату или время!'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # user = self.request.user
-        # if user.profile.first_name == None or user.profile.last_name == None or user.profile.surname == None: # Проверка, что у пользователя заполнены данные в профиле
-        #     return Response({'error': 'Заполните данные своего профиля!'}, status=400)
-        
-        
-        self.perform_create(serializer)
+
+        serializer.validated_data['user'] = user  # Assign the user to the validated data
+
+        serializer.save()
+
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers) # Возврат успешного ответа с данными бронирования
-    
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
     def get_all_tickets(self, queue):
         return Customer.objects.filter(queue=queue) # Получение всех талонов для определенной очереди
@@ -116,17 +112,17 @@ class BookingViewSet(viewsets.ModelViewSet):
         Эндпоинт для печати талона по предварительной записи
         Нужно передать ФИО и пин-код талона
         """
-        first_name = request.data.get('first_name')  # Извлечение имени из запроса
-        last_name = request.data.get('last_name')  # Извлечение фамилии из запроса
-        surname = request.data.get('surname')  # Извлечение отчества из запроса
+        # first_name = request.data.get('first_name')  # Извлечение имени из запроса
+        # last_name = request.data.get('last_name')  # Извлечение фамилии из запроса
+        # surname = request.data.get('surname')  # Извлечение отчества из запроса
         pin = request.data.get('pin')  # Извлечение пин-кода талона из запроса
 
 
         matching_booking = Booking.objects.filter(
         pin=pin,
-        first_name=first_name,
-        last_name=last_name,
-        surname=surname
+        # first_name=first_name,
+        # last_name=last_name,
+        # surname=surname
         ).first()  # Поиск бронирования, соответствующего переданным данным
         
         if not matching_booking: # Если бронирование не найдено
@@ -163,13 +159,13 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         customer = Customer.objects.create(
             queue=matching_booking.queue,
-            # user=matching_booking.user,
+            user=matching_booking.user,
             time=matching_booking.time,
             category='booked',
             ticket_number=ticket_number,
-            first_name=first_name,
-            last_name=last_name,
-            surname=surname,
+            # first_name=first_name,
+            # last_name=last_name,
+            # surname=surname,
             pasport=matching_booking.pasport,
             phone_number=matching_booking.phone_number,
             position=0
