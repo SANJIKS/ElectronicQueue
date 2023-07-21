@@ -6,7 +6,7 @@ class IsOperator(BasePermission):
 
 class IsOperatorOffline(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.profile.position == 'operator' and request.user.window.is_online == False
+        return request.user.is_authenticated and request.user.profile.position == 'operator' 
     
 class OperatorIsNotBusy(BasePermission):
     def has_permission(self, request, view):
