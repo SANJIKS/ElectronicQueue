@@ -46,7 +46,7 @@ class TicketConsumer(AsyncWebsocketConsumer):
 
 
     def get_tickets(self):
-        return Customer.objects.filter(created_at__date=date.today(), is_served=None, queue__operator=self.user)
+        return Customer.objects.filter(created_at__date=date.today(), is_served=None, queue__operator=self.user,old_operator=None, operator=None).order_by('position')
 
     async def send_ticket_list(self, event):
         ticket_list = await self.get_ticket_list()

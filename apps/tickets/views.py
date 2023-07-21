@@ -73,6 +73,15 @@ class OperatorViewSet(viewsets.ViewSet):
         customer.number_of_calls += 1
         customer.save()
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         return Response({'message': f'{customer.ticket_number}-{customer.first_name}-{customer.last_name}, подойдите пожалуйста к {self.request.user.window.number} окну'}, status=200)
 
 
@@ -107,6 +116,24 @@ class OperatorViewSet(viewsets.ViewSet):
         window.save()
 
         OperatorAction.objects.create(operator=self.request.user, action='started', event=f'Начал обслуживать талон {customer.ticket_number}')
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
 
         serializer = CustomerSerializer(customer)
 
@@ -141,6 +168,24 @@ class OperatorViewSet(viewsets.ViewSet):
 
         customer.operator.window.is_busy = False
         customer.operator.window.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
 
         return Response({'message': 'Талон добавлен в список ожидания'}, status=200)
     
@@ -196,6 +241,24 @@ class OperatorViewSet(viewsets.ViewSet):
         OperatorAction.objects.create(operator=old_operator, action='shifted', event=f'Талон {customer.ticket_number} был переведен на {new_window.number} окно')
         CustomerAction.objects.create(customer=customer, action='cancelled', event=f'Талон {customer.ticket_number} был переведен на {new_window.number} окно')
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         return Response({'message': 'Талон успешно перенесен на другую очередь.'})
     
 
@@ -214,6 +277,24 @@ class OperatorViewSet(viewsets.ViewSet):
         customer = Customer.objects.get(pk=pk)
         customer.position = Customer.objects.filter(queue=queue, created_at__date=today, is_served=None).count()
         customer.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
 
         return Response({'message': 'Талон перемещен в конец очереди.'})
     
@@ -245,6 +326,24 @@ class OperatorViewSet(viewsets.ViewSet):
         OperatorAction.objects.create(operator=customer.operator, action='served', event=f'Обслужил талон {customer.ticket_number}')
         CustomerAction.objects.create(customer=customer, action='served', event=f'Талон {customer.ticket_number} был обслужен')
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         return Response({'message': 'Талон обслужен и среднее время обновлено'})
     
 
@@ -270,6 +369,24 @@ class OperatorViewSet(viewsets.ViewSet):
 
         OperatorAction.objects.create(operator=customer.operator, action='cancelled', event=f'Отменил талон {customer.ticket_number}')
         CustomerAction.objects.create(customer=customer, action='cancelled', event=f'Талон {customer.ticket_number} был отменен')
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
 
         return Response({'message': 'Талон отменен.'})
 
