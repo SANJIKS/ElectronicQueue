@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'drf_api_logger',
     'dbbackup',
-
+    
     'rest_framework',
     'drf_yasg',
     'django_filters',
@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'redis',
     'uvicorn',
-    
+    'channels',
+
     #my apps
     'apps.qsystem',
     'apps.branches',
@@ -97,14 +98,16 @@ AUTHENTICATION_BACKENDS = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 ASGI_APPLICATION = 'core.asgi.application'
+from channels_redis.core import RedisChannelLayer
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-#	"CONFIG": {
-#            "hosts": [("127.0.0.1", 6379)],  # Указать соответствующие настройки для вашего Redis сервера
-#        },
-    }
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],  # Укажите адрес и порт вашего Redis сервера
+            # Дополнительные настройки, если необходимо
+        },
+    },
 }
 
 # Database
