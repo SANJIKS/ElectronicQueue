@@ -47,20 +47,49 @@ class Board(models.Model):
     bold = models.BooleanField(default=False)
     speed = models.IntegerField(default=2)
 
+    def __str__(self):
+        return f'{self.board.number} - {self.board.branch.name}'
+    
+    class Meta:
+        verbose_name = 'Табло'
+        verbose_name_plural = 'Таблы'
+
+
 class Ad(models.Model):
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='ads')
     content_type = models.CharField(max_length=10, choices=[('photo', 'Photo'), ('video', 'Video')])
     content = models.FileField(upload_to='ad_contents/')
+
+    def __str__(self):
+        return f'{self.board.number} - {self.board.branch.name} - {self.content_type}'
+    
+    class Meta:
+        verbose_name = 'Реклама'
+        verbose_name_plural = 'Рекламы'
 
 
 class Floor(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     number = models.IntegerField()
 
+    def __str__(self):
+        return f'{self.number} этаж - {self.branch.name}'
+    
+    class Meta:
+        verbose_name = 'Этаж'
+        verbose_name_plural = 'Этажи'
+
 class Cabinet(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     floor = models.ForeignKey(Floor, on_delete=models.CASCADE)
     number = models.IntegerField()
+    
+    def __str__(self):
+        return f'Кабинет №{self.number} - {self.branch.name}'
+    
+    class Meta:
+        verbose_name = 'Кабинет'
+        verbose_name_plural = 'Кабинеты'
 
 
 #Модель Окна
@@ -90,8 +119,23 @@ class Calendar(models.Model):
     holiday = models.CharField(max_length=100)
     date = models.DateField()
 
+    def __str__(self):
+        return f'{self.holiday} - {self.date} - {self.branch}'
+    
+    class Meta:
+        verbose_name = 'День'
+        verbose_name_plural = 'Календарь'
+
+
 
 class BaseCalendar(models.Model):
     holiday = models.CharField(max_length=100)
     date = models.DateField()
+
+    def __str__(self):
+        return f'{self.holiday} - {self.date} - {self.branch}'
+    
+    class Meta:
+        verbose_name = 'День'
+        verbose_name_plural = 'Общий календарь'
 
