@@ -119,10 +119,10 @@ class BranchViewSet(ModelViewSet):
     def get_permissions(self):
         if self.action in ['update', 'destroy', 'partial_update', 'put', 'delete']:
             return [IsAdmin(),IsAdminOfHisBranch()]
-        elif self.action == 'get_service_types':
-            return [AllowAny()]
-        else:
+        elif self.action == 'create':
             return [IsAdmin()]
+        else:
+            return [AllowAny()]
 
 
     @action(detail=True, methods=['get'])

@@ -116,7 +116,7 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(f"score_boardcas", self.channel_name)
+        await self.channel_layer.group_discard(f"score_boardcast", self.channel_name)
     
     # async def send_group_ticket_list(self, ticket_list):
     #     await self.channel_layer.group_send(
