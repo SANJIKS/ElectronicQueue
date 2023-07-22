@@ -4,9 +4,8 @@ from datetime import datetime
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-from django.utils import timezone
 from django.db.models import Max
-from rest_framework import viewsets, status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -47,13 +46,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         time = serializer.validated_data.get('time')  # Извлечение времени из валидированных данных
         date_ = serializer.validated_data.get('date')  # Извлечение даты из валидированных данных
         queue = serializer.validated_data.get('queue')  # Извлечение очереди из валидированных данных
-        first_name = serializer.validated_data.get('first_name')
-        last_name = serializer.validated_data.get('last_name')
-        surname = serializer.validated_data.get('surname')
 
         branch = queue.branch
 
-        if queue.is_blocked == True:
+        if queue.is_blocked:
             return Response({'error': 'В данный момент очередь недоступна!'}, status=400)
 
         base_holiday = BaseCalendar.objects.filter(date=date_)
@@ -65,13 +61,14 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response({'error': 'В этот день филиал не работает!'}, status=400)
 
 
-        user_bookings = Booking.objects.filter(first_name=first_name, last_name=last_name, surname=surname, date=date_).exists() # Проверка наличия бронирований пользователя на выбранную дату
-
-        if time < branch.schedule_start or time > branch.schedule_end: # Проверка, что выбранное время находится в рабочем расписании филиала
+        if not time or time < branch.schedule_start or time > branch.schedule_end: # Проверка, что выбранное время находится в рабочем расписании филиала
             return Response(
-                {'error': 'Филиал не работает в это время.'},
+                {'error': 'Неверное время или филиал не работает в это время'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        user = self.request.user
+        user_bookings = Booking.objects.filter(user=user, date=date_).exists() # Проверка наличия бронирований пользователя на выбранную дату
 
         if user_bookings: # Если у пользователя уже есть бронирование на выбранную дату
             return Response(
@@ -93,11 +90,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {'error': 'Вы не можете записаться на прошедшую дату или время!'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # user = self.request.user
-        # if user.profile.first_name == None or user.profile.last_name == None or user.profile.surname == None: # Проверка, что у пользователя заполнены данные в профиле
-        #     return Response({'error': 'Заполните данные своего профиля!'}, status=400)
-        
+                
         
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -116,17 +109,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         Эндпоинт для печати талона по предварительной записи
         Нужно передать ФИО и пин-код талона
         """
-        first_name = request.data.get('first_name')  # Извлечение имени из запроса
-        last_name = request.data.get('last_name')  # Извлечение фамилии из запроса
-        surname = request.data.get('surname')  # Извлечение отчества из запроса
         pin = request.data.get('pin')  # Извлечение пин-кода талона из запроса
 
 
         matching_booking = Booking.objects.filter(
         pin=pin,
-        first_name=first_name,
-        last_name=last_name,
-        surname=surname
         ).first()  # Поиск бронирования, соответствующего переданным данным
         
         if not matching_booking: # Если бронирование не найдено
@@ -163,15 +150,9 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         customer = Customer.objects.create(
             queue=matching_booking.queue,
-            # user=matching_booking.user,
             time=matching_booking.time,
             category='booked',
             ticket_number=ticket_number,
-            first_name=first_name,
-            last_name=last_name,
-            surname=surname,
-            pasport=matching_booking.pasport,
-            phone_number=matching_booking.phone_number,
             position=0
         ) # Создание объекта Customer 
 

@@ -23,10 +23,11 @@ class Profile(models.Model):
         # ('guest', 'Гость'),
         ('operator', 'Оператор'),
         ('admin', 'Admin'),
-        ('registrator', 'Регистратор')
+        ('registrator', 'Регистратор'),
+        ('regular', 'Посетитель')
     ]
 
-    position = models.CharField(max_length=20, choices=CHOISES, default='operator') # Должность
+    position = models.CharField(max_length=20, choices=CHOISES, default='regular') # Должность
 
 
     def __str__(self):
