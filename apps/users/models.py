@@ -20,7 +20,6 @@ class Profile(models.Model):
     banned = models.BooleanField(default=False) # Флаг, указывающий, заблокирован ли пользователь
 
     CHOISES = [
-        # ('guest', 'Гость'),
         ('operator', 'Оператор'),
         ('admin', 'Admin'),
         ('registrator', 'Регистратор'),

@@ -34,16 +34,19 @@ class TicketConsumer(AsyncWebsocketConsumer):
         ticket_list = []
         
         async for ticket in tickets:
+            queue_name = await database_sync_to_async(lambda: ticket.queue.name)()
+
             ticket_data = {
                 'id': ticket.id,
                 'ticket_number': ticket.ticket_number,
                 'position': ticket.position,
                 'created_at': ticket.created_at.isoformat(),
+                'queue': queue_name,
+                'category': ticket.category
             }
             ticket_list.append(ticket_data)
 
         return ticket_list
-
 
     def get_tickets(self):
         return Customer.objects.filter(created_at__date=date.today(), is_served=None, queue__operator=self.user,old_operator=None, operator=None).order_by('position')
