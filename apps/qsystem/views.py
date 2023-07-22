@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from apps.branches.models import BaseCalendar, Calendar
+from apps.branches.models import BaseCalendar, Calendar, Window
 from apps.report_apps.customer_reports.models import CustomerAction
 
 from .models import Customer, Queue
@@ -133,34 +133,40 @@ class PrintingView(viewsets.ViewSet):
             'Тип услуги': customer.queue.services.name, 
             'Позиция': customer.position,
             'Выдано': customer.created_at,  
-            'Имя посетителя': f'{customer.first_name} {customer.last_name} {customer.surname}',
-            'Статус': customer.is_served, 
-            'Наименование организации': 'RSK',
-            'Филиал': customer.queue.branch.street,
-            # 'Количество посетителей в очереди': Customer.objects.filter(queue=customer.queue, is_served=None, ticket_number__lt=customer.ticket_number).count(),  
-            'Примерное время ожидания': self.calculate_estimated_wait_time(self, customer.queue, customer), 
+            'Филиал': customer.queue.branch.name,
+            'Примерное время ожидания': self.calculate_estimated_wait_time(customer.queue, customer), 
         }
         return Response(ticket_data)  
     
 
     def calculate_estimated_wait_time(self, queue, customer):
-            ahead_customers = Customer.objects.filter(queue=queue, is_served=None, position__lt=customer.position)
-            average_waiting_time = queue.average_waiting_time or 0
+        ahead_customers = Customer.objects.filter(queue=queue, is_served=None, position__lt=customer.position)
+        average_waiting_time = queue.average_waiting_time or 0
+        total_waiting_time = (customer.position - 1) * average_waiting_time
 
-            total_waiting_time = (customer.position - 1) * average_waiting_time
+        windows = Window.objects.filter(operator__queues__in=[queue], is_online=True).count()
 
-            estimated_wait_time = datetime.now() + timedelta(minutes=total_waiting_time)
-            time_remaining = estimated_wait_time - datetime.now()
+        if windows <= 0:
+            return None
 
-            minutes = time_remaining.seconds // 60
-            seconds = time_remaining.seconds % 60
+        # Расчитать время ожидания для одного окна оператора
+        time_per_window = total_waiting_time / windows
 
-            if minutes == 1439 and seconds == 59:
-                minutes, seconds = 0, 0
-                
-            time_remaining_str = f"{minutes} минут, {seconds} секунд"
+        # Рассчитать общее время ожидания, учитывая количество окон
+        total_waiting_time /= windows
 
-            return time_remaining_str
+        estimated_wait_time = datetime.now() + timedelta(minutes=total_waiting_time)
+        time_remaining = estimated_wait_time - datetime.now()
+
+        minutes = time_remaining.seconds // 60
+        seconds = time_remaining.seconds % 60
+
+        if minutes == 1439 and seconds == 59:
+            minutes, seconds = 0, 0
+
+        time_remaining_str = f"{minutes} минут, {seconds} секунд"
+
+        return time_remaining_str
 
 
 

@@ -14,7 +14,7 @@ from apps.qsystem.serializers import QueueSerializer
 
 from .models import BaseCalendar, Branch, Calendar, Region, Window, Board, Ad
 from .serializers import (BaseCalendarSerializer, BranchSerializer,
-                          CalendarSerializer, RegionSerializer,
+                          CalendarSerializer, RegionSerializer, ServiceSerializer,
                           WindowSerializer, BoardSerializer, AdSerializer)
 
 
@@ -133,9 +133,10 @@ class BranchViewSet(ModelViewSet):
         """
         branch = Branch.objects.get(pk=pk)  # Получение объекта филиала по переданному ID
         queues = branch.queues.all()  # Получение всех очередей, связанных с данным филиалом
-        service_types = set(queue.services.pk for queue in queues)  # Получение типов услуг, связанных с очередями
+        service_types = set(queue.services for queue in queues)  # Получение типов услуг, связанных с очередями
+        serializer = ServiceSerializer(list(service_types), many=True)
 
-        return Response({'service_types': list(service_types)}, status=200)  # Возврат списка типов услуг
+        return Response(serializer.data, status=200)  # Возврат списка типов услуг
     
     
 
