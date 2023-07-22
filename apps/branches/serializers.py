@@ -1,8 +1,14 @@
 from rest_framework import serializers
 
+from apps.qsystem.models import Services
 from .models import (BaseCalendar, Branch, Cabinet, Calendar, Floor, Region,
                      Window, Board, Ad)
 
+
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Services
+        fields = '__all__'
 
 #Сериализатор для модели Region
 class RegionSerializer(serializers.ModelSerializer):
