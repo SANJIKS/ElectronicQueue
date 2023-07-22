@@ -86,7 +86,7 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         await self.channel_layer.group_add(f"score_broadcast", self.channel_name)
-        await self.send_ticket_list('ahaha')
+        await self.send_ticket_list('')
 
     async def get_ticket_list(self):
         tickets = await sync_to_async(self.get_tickets)()
@@ -94,11 +94,21 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
         ticket_list = []
 
         async for ticket in tickets:
+            try:
+                window_number = await database_sync_to_async(lambda: ticket.window.number)()
+            except:
+                window_number = ''
+            # if window_number:
+            #     window_number = window_number
+            # else:
+            #     window_number = ''
+
             ticket_data = {
                 'id': ticket.id,
                 'ticket_number': ticket.ticket_number,
                 'status': 'started' if ticket.operator_id else 'called',
                 'created_at': ticket.created_at.isoformat(),
+                'window_number': window_number
             }
             ticket_list.append(ticket_data)
 
@@ -111,11 +121,11 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
             queue__branch=self.branch_id
         ).exclude(number_of_calls=0)
 
-    async def send_ticket_list(self, event=None):
+    async def send_ticket_list(self, event):
         ticket_list = await self.get_ticket_list()
         await self.send(text_data=json.dumps({
             'action': 'ticket_list_updated',
-            'ticket_data': ticket_list
+            'ticket_data': ticket_list,
         }))
 
     async def disconnect(self, close_code):

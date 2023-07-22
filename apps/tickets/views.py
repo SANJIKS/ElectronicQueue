@@ -78,11 +78,12 @@ class OperatorViewSet(viewsets.ViewSet):
             "score_broadcast",
             {
                 "type": "send_ticket_list",
-                "event": {},  
+                "event": {'window': self.request.user.window.number}
+
             }
         )
 
-        return Response({'message': f'{customer.ticket_number}-{customer.first_name}-{customer.last_name}, подойдите пожалуйста к {self.request.user.window.number} окну'}, status=200)
+        return Response({'message': f'{customer.ticket_number}, подойдите пожалуйста к {self.request.user.window.number} окну'}, status=200)
 
 
     @action(detail=True, methods=['post'])
@@ -131,7 +132,8 @@ class OperatorViewSet(viewsets.ViewSet):
             "score_broadcast",
             {
                 "type": "send_ticket_list",
-                "event": {},  
+                "event": {'window': self.request.user.window.number}
+ 
             }
         )
 
@@ -162,12 +164,13 @@ class OperatorViewSet(viewsets.ViewSet):
         waiting_list = Waiting_List.objects.create(customer=customer)
 
         customer.window = None
-        customer.operator = None
         customer.served_start = None
-        customer.save()
 
         customer.operator.window.is_busy = False
         customer.operator.window.save()
+        
+        customer.operator = None
+        customer.save()
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -183,7 +186,8 @@ class OperatorViewSet(viewsets.ViewSet):
             "score_broadcast",
             {
                 "type": "send_ticket_list",
-                "event": {},  
+                "event": {'window': self.request.user.window.number}
+ 
             }
         )
 
