@@ -7,7 +7,6 @@ from django.urls import reverse
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 
 from apps.branches.models import BaseCalendar, Calendar, Window
@@ -182,6 +181,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+    
 
 class PrintingView(viewsets.ViewSet):
     @swagger_auto_schema(
@@ -256,3 +256,63 @@ class PrintingView(viewsets.ViewSet):
 
 
 
+
+from drf_yasg import openapi
+from django.http import FileResponse
+from rest_framework.decorators import api_view
+from telethon.sync import TelegramClient
+from telethon.errors import FloodWaitError
+import os
+import time
+
+
+api_id = '28380656'
+api_hash = 'ec44d168a699b9f1b61dc58a5830ceff'
+bot_username = 'https://t.me/steosvoice_bot' 
+
+os.makedirs('audios', exist_ok=True)
+
+
+
+@swagger_auto_schema(methods=['post'], request_body=openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'text': openapi.Schema(type=openapi.TYPE_STRING, description='Text to send to the bot'),
+    }
+), responses={200: openapi.Response('Voice message')})
+@api_view(['POST'])
+def voice_bot(request):
+    text = request.data.get('text')
+    if not text:
+        return Response({"error": "Text field is required"}, status=400)
+
+    async def get_audio(text):
+        async with TelegramClient('anon', api_id, api_hash) as client:
+            await client.send_message(bot_username, text)
+
+            start_time = time.time()
+            while time.time() - start_time < 60:
+                try:
+                    async for message in client.iter_messages(bot_username, limit=1):
+                        if message.voice or message.audio:  
+                            path_to_ogg = os.path.join('audios', 'voice.ogg')
+                            await client.download_media(message.media, path_to_ogg)
+
+                            
+                            if os.path.exists(path_to_ogg) and os.path.getsize(path_to_ogg) > 0:
+                                return path_to_ogg
+                except FloodWaitError as e:
+                   
+                    time.sleep(e.seconds)
+
+    path_to_ogg = async_to_sync(get_audio)(text)
+
+    if path_to_ogg:
+        
+        if os.path.exists(path_to_ogg) and os.path.getsize(path_to_ogg) > 0:
+            
+            return FileResponse(open(path_to_ogg, 'rb'), as_attachment=True, filename='voice.ogg', content_type='audio/ogg')
+        else:
+            return Response({"error": "No valid audio file was generated"}, status=500)
+    else:
+        return Response({"error": "No audio received"}, status=400)
