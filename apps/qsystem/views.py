@@ -256,14 +256,14 @@ class PrintingView(viewsets.ViewSet):
 
 
 
+import os
+import time
 
 from drf_yasg import openapi
 from django.http import FileResponse
 from rest_framework.decorators import api_view
 from telethon.sync import TelegramClient
 from telethon.errors import FloodWaitError
-import os
-import time
 
 
 api_id = '28380656'
