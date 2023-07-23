@@ -94,14 +94,7 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
         ticket_list = []
 
         async for ticket in tickets:
-            try:
-                window_number = await database_sync_to_async(lambda: ticket.window.number)()
-            except:
-                window_number = ''
-            # if window_number:
-            #     window_number = window_number
-            # else:
-            #     window_number = ''
+            window_number = await database_sync_to_async(lambda: ticket.window.number)()
 
             ticket_data = {
                 'id': ticket.id,

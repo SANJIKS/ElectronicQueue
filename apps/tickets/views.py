@@ -71,6 +71,7 @@ class OperatorViewSet(viewsets.ViewSet):
             cancel_ticket.apply_async(args=[customer.id], countdown=customer.queue.waiting_time_operator)
 
         customer.number_of_calls += 1
+        customer.window = self.request.user.window
         customer.save()
 
         channel_layer = get_channel_layer()
@@ -78,7 +79,7 @@ class OperatorViewSet(viewsets.ViewSet):
             "score_broadcast",
             {
                 "type": "send_ticket_list",
-                "event": {'window': self.request.user.window.number}
+                "event": {}
 
             }
         )
@@ -132,7 +133,7 @@ class OperatorViewSet(viewsets.ViewSet):
             "score_broadcast",
             {
                 "type": "send_ticket_list",
-                "event": {'window': self.request.user.window.number}
+                "event": {}
  
             }
         )
