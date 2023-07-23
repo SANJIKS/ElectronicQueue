@@ -8,6 +8,7 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from drf_yasg.utils import swagger_auto_schema
 
 from apps.branches.models import BaseCalendar, Calendar, Window
 from apps.report_apps.customer_reports.models import CustomerAction
@@ -29,6 +30,11 @@ class QueueViewSet(viewsets.ModelViewSet):
         else:
             return [IsAdmin()]
 
+    @swagger_auto_schema(
+        operation_summary='Создать очередь (Для администратора)',
+        operation_description="""
+        Эндпоинт для создания очереди(услуги), пользователь который отправляет запрос должен быть администратором."""
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -36,6 +42,44 @@ class QueueViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
 
+    @swagger_auto_schema(
+        operation_summary='Обновить очередь (Для администратора)',
+        operation_description="""
+        Эндпоинт для обновления очереди(услуги), пользователь который отправляет запрос должен быть администратором."""
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить очередь партийно (Для администратора)',
+        operation_description="""
+        Эндпоинт для партийного обновления очереди(услуги), пользователь который отправляет запрос должен быть администратором."""
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Удалить очередь (Для администратора)',
+        operation_description="""
+        Эндпоинт для удаления очереди(услуги), пользователь который отправляет запрос должен быть администратором."""
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Retrieve очередь по id (Для администратора)',
+        operation_description="""
+        Эндпоинт для получения очереди(услуги) по id, пользователь который отправляет запрос должен быть администратором."""
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+
+    @swagger_auto_schema(
+        operation_summary='Получить список документов',
+        operation_description="""
+        Эндпоинт для получения списка документов очереди(услуги), необходимо передать id очереди(услуги)"""
+    )
     @action(detail=True, methods=['get'])
     def get_documents(self, request, pk=None):
         queue = Queue.objects.get(pk=pk)
@@ -51,7 +95,7 @@ class QueueViewSet(viewsets.ModelViewSet):
 class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     queryset = Customer.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_serializer_context(self):
         context = super().get_serializer_context() 
@@ -59,6 +103,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return context
 
 
+    @swagger_auto_schema(
+        operation_summary='Создать талон',
+        operation_description="""
+        Эндпоинт для создания талона, необходимо передать категорию пользователя и id очереди(услуги)"""
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -100,9 +149,46 @@ class CustomerViewSet(viewsets.ModelViewSet):
         CustomerAction.objects.create(customer=action, action='created', event=f'Создан талон {action.ticket_number}')
 
         return response
+    
 
+    @swagger_auto_schema(
+        operation_summary='Получить талон по id',
+        operation_description="""
+        Энпдоинт для получения талона по его id, необходимо передать его id"""
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить талон',
+        operation_description="""
+        Эндпоинт для обновления талона, необходимо передать его id и новые данные"""
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить талон партийно',
+        operation_description="""
+        Эндпоинт для партийного обновления талона, необходимо передать его id и новые данные"""
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Удалить талон',
+        operation_description="""
+        Эндпоинт для удаления талона, необходимо передать его id"""
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 class PrintingView(viewsets.ViewSet):
+    @swagger_auto_schema(
+        operation_summary='Печать талона',
+        operation_description="""
+        Эндпоинт для печати талона, распечатать можно только в рабочее время и если талон не обслужен или не отменен. Необходимо передать его id"""
+    )
     def retrieve(self, request, pk=None):
         try:
             customer = Customer.objects.get(pk=pk)  # Получение объекта талона по номеру 

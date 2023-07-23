@@ -39,6 +39,46 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
+
+    @swagger_auto_schema(
+        operation_summary='Добавить пользователя  (Для администатора)',
+        operation_description="""
+        Эндпоинт для создания пользователя"""
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary='Retrieve чтение пользователя  (Для администатора)',
+        operation_description="""
+        Эндпоинт для получения пользователя по его id"""
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить пользователя  (Для администатора)',
+        operation_description="""
+        Эндпоинт для обновления пользователя"""
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить пользователя партийно  (Для администатора)',
+        operation_description="""
+        Эндпоинт для партийного обновления пользователя"""
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Удалить пользователя  (Для администатора)',
+        operation_description="""
+        Эндпоинт для удаления пользователя"""
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
     
 
 class UsersProfileViewSet(viewsets.ViewSet):
@@ -49,11 +89,23 @@ class UsersProfileViewSet(viewsets.ViewSet):
             return [IsAuthenticated()]
         return super().get_permissions()
 
+
+    @swagger_auto_schema(
+        operation_summary="Получить профиль пользователя",
+        operation_description="""
+        Эндпоинт для получения профиля пользователя. Необходимо передать токен пользователя"""
+    )
     def get(self, request):
         profile = Profile.objects.get(user=request.user)
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
     
+
+    @swagger_auto_schema(
+        operation_summary="Обновить профиль пользователя (Для администратора)",
+        operation_description="""
+        Эндпоинт для полного обновления пользователя. Необходимо передать токен пользователя и новые данные"""
+    )
     def put(self, request):
         profile = Profile.objects.get(user=request.user)
         serializer = ProfileSerializer(profile, data=request.data)
@@ -62,6 +114,12 @@ class UsersProfileViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
+
+    @swagger_auto_schema(
+        operation_summary="Обновить профиль пользователя партийно (Для администратора)",
+        operation_description="""
+        Эндпоинт для партийного обновления пользователя. Необходимо передать токен пользователя и новые данные"""
+    )
     def patch(self, request):
         profile = Profile.objects.get(user=request.user)
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
@@ -70,7 +128,12 @@ class UsersProfileViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
     
-
+    
+    @swagger_auto_schema(
+        operation_summary="Получить профиль по id (Для администратора)",
+        operation_description="""
+        Эндпоинт для получения профиля пользователя по id профиля, необходимо передать id"""
+    )
     @action(detail=True, methods=['get'])
     def get_retrieve(self, request, pk=None):
         profile = Profile.objects.get(pk=pk)
@@ -80,7 +143,12 @@ class UsersProfileViewSet(viewsets.ViewSet):
 
 class AdminViewSet(viewsets.ViewSet):
     @action(detail=True, methods=['post'])
-    @swagger_auto_schema(request_body=ChangeMaxCalls)
+    @swagger_auto_schema(
+        request_body=ChangeMaxCalls,
+        operation_summary="Настроить максимальное количество вызовов посетителя к оператору (Для администратора)",
+        operation_description="""
+        Эндпоинт для изменения максимального количества вызовов посетителя к оператору после которых талон посетителя отменяется."""
+        )
     def change_max_calls(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         queue = Queue.objects.get(pk=pk)
@@ -91,7 +159,12 @@ class AdminViewSet(viewsets.ViewSet):
     
 
     @action(detail=True, methods=['post'])
-    @swagger_auto_schema(request_body=ChangePrintTime)
+    @swagger_auto_schema(
+        request_body=ChangePrintTime,
+        operation_summary="Настроить время для печати талонов (Для администратора)",
+        operation_description="""
+        Эндпоинт для изменения времени печати талонов для каждой очереди(услуги)"""
+        )
     def change_printing_time(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         queue = Queue.objects.get(pk=pk)
@@ -103,6 +176,11 @@ class AdminViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_200_OK)
     
     
+    @swagger_auto_schema(
+        operation_summary="Заблокировать/Разблокировать очередь(услугу) (Для администратора)",
+        operation_description="""
+        Эндпоинт для блокировки или разблокировки очереди(услуги)"""
+        )
     @action(detail=True, methods=['post'])
     def block_queues(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -116,7 +194,12 @@ class AdminViewSet(viewsets.ViewSet):
         return Response({'message': 'Очередь заблокирована'}, status=200)
     
 
-    @swagger_auto_schema(request_body=ChangeWaitingTime)
+    @swagger_auto_schema(
+        request_body=ChangeWaitingTime,
+        operation_summary="Настроить время ожидания оператором посетителя (Для администратора)",
+        operation_description="""
+        Эндпоинт для изменения времени ожидания оператора, по истечению которого вызванный посетитель будет перенесен в конец очереди"""
+            )
     @action(detail=True, methods=['post'])
     def change_operator_waiting_time(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -127,17 +210,27 @@ class AdminViewSet(viewsets.ViewSet):
         return Response({'message': 'Время изменено'}, status=200)
     
 
-    @swagger_auto_schema(request_body=ChangeMaxTransfers)
+    @swagger_auto_schema(
+        request_body=ChangeMaxTransfers,
+        operation_summary="Настроить максимальное количество переводов на другое окно для очереди (Для администратора)",
+        operation_description="""
+        Эндпоинт для изменения максимального количества переводов за день на другое окно для каждой очереди"""
+            )
     @action(detail=True, methods=['post'])
     def change_max_transfers(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         queue = Queue.objects.get(pk=pk)
         number = request.data.get('number')
-        queue.max_calls = number
+        queue.max_transfers = number
         queue.save()
         return Response({'message': 'Максимальное количество вызовов изменено!'})
     
 
+    @swagger_auto_schema(
+        operation_summary="Включить/Отключить автоматический перенос талона посетителя в конец очереди при длительной неявке (Для администратора)",
+        operation_description="""
+        Эндпоинт для включения или отключения автоматического переноса талона посетителя в конец очереди, при истечении максимального времени ожидания оператора"""
+            )
     @action(detail=True, methods=['post'])
     def change_auto_transfer(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -151,6 +244,11 @@ class AdminViewSet(viewsets.ViewSet):
         return Response({'message': 'Автоматический перенос в конец очереди включен'})
 
 
+    @swagger_auto_schema(
+        operation_summary="Получить список онлайн операторов (Для администратора)",
+        operation_description="""
+        Эндпоинт для получения операторов которые в данный момент работают"""
+            )
     @action(detail=False, methods=['get'])
     def get_online_operators(self, request, *args, **kwargs):
         admin = self.request.user
@@ -162,9 +260,21 @@ class AdminViewSet(viewsets.ViewSet):
 
 
 class TCPConfigView(APIView):
+    permission_classes = [IsAdmin]
+    @swagger_auto_schema(
+        operation_summary="Получить Порт TCP (Для администратора)",
+        operation_description="""
+        Эндпоинт для просмотра нынешнего порта TCP"""
+            )
     def get(self, request):
         return Response({"tcp_port": settings.TCP_PORT})
 
+
+    @swagger_auto_schema(
+        operation_summary="Настроить Порт TCP (Для администратора)",
+        operation_description="""
+        Эндпоинт для изменения порта TCP, необходимо передать новый порт TCP"""
+            )
     def put(self, request):
         tcp_port = request.data.get("tcp_port")
         if tcp_port:
@@ -175,6 +285,7 @@ class TCPConfigView(APIView):
 
 
 class BackupViewSet(viewsets.ViewSet):
+    permission_classes = [IsAdmin]
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -183,8 +294,8 @@ class BackupViewSet(viewsets.ViewSet):
             },
             required=['backup_name']
         ),
-        operation_summary="Create database backup",
-        operation_description="Create a backup of the current database.",
+        operation_summary="Создать резервное копирование БД в указанный файл (Для администратора)",
+        operation_description="Укажите название файла для резервного копирования базы данных.",
         responses={
             200: "Backup created successfully",
             400: "Invalid request body",
@@ -216,8 +327,8 @@ class BackupViewSet(viewsets.ViewSet):
             },
             required=['backup_name']
         ),
-        operation_summary="Restore database backup",
-        operation_description="Restore the database from a backup.",
+        operation_summary="Восстановить БД из резервной копии (Для администратора)",
+        operation_description="Укажите название файла для восстановления.",
         responses={
             200: "Database restored successfully",
             400: "Invalid request body",
@@ -241,9 +352,14 @@ class BackupViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=500)        
     
+
+    @swagger_auto_schema(
+        operation_summary="Список резервных копий БД (Для администратора)",
+        operation_description="Эндпоинт для получения списка созданных резервных копий базы данных."
+    )
     @action(detail=False, methods=['get'])
     def get_backups(self, request):
-        backup_name_prefix = 'your_prefix'  # Замените на своё имя или название ПК
+        backup_name_prefix = 'your_prefix'  
         backups = os.listdir('backups')
         filtered_backups = [backup for backup in backups if not backup.startswith(backup_name_prefix)]
         trimmed_backups = [backup.replace('.psql.bin', '') for backup in filtered_backups]
@@ -251,6 +367,12 @@ class BackupViewSet(viewsets.ViewSet):
 
 
 class ProtocolView(viewsets.ViewSet):
+    permission_classes = [IsAdmin]
+
+    @swagger_auto_schema(
+        operation_summary="Протоколы операторов (Для администратора)",
+        operation_description="Эндпоинт для получения протоколов операторов."
+    )
     @action(detail=False, methods=['get'])
     def get_operator_actions(self, request):
         admin = self.request.user
@@ -262,6 +384,10 @@ class ProtocolView(viewsets.ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
+    @swagger_auto_schema(
+        operation_summary="Протоколы талонов (Для администратора)",
+        operation_description="Эндпоинт для получения протоколов талонов."
+    )
     @action(detail=False, methods=['get'])
     def get_customer_actions(self, request):
         admin = self.request.user

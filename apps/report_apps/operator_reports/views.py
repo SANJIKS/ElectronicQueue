@@ -83,7 +83,10 @@ class OperatorGraphicReportWordViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY"'
         )
-    ])
+    ],
+    operation_summary="Отчет, среднее время обслуживания оператор за год. WORD",
+    operation_description="Отчет в формате Word, среднее время обслуживания оперетора за год"
+    )
     def get_monthly_average_time(self, request, pk=None):
         operator = User.objects.get(pk=pk)
         year = request.query_params.get('year')
@@ -140,10 +143,7 @@ class OperatorGraphicReportWordViewSet(ViewSet):
 
 
 
-
-
 class OperatorStatisticReportPDFViewSet(ViewSet):
-
     @action(detail=True, methods=['get'])
     @swagger_auto_schema(manual_parameters=[
         openapi.Parameter(
@@ -153,7 +153,10 @@ class OperatorStatisticReportPDFViewSet(ViewSet):
             format=openapi.FORMAT_INT64,
             required=True,
             description='Date in the format "YYYY"')
-    ])
+    ],
+    operation_summary="Отчет, количество обслуженных талонов оператора за год. PDF",
+    operation_description="Отчет в формате PDF, количество обслуживаний оперетора за год"
+    )
     def get_yearly_report(self, request, pk=None):
         operator = User.objects.get(pk=pk)
         year = request.query_params.get('year')
@@ -251,7 +254,10 @@ class OperatorStatisticReportPDFViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет, количество обслуженных талонов оператора за день. PDF",
+    operation_description="Отчет в формате PDF, количество обслуживаний оперетора за день"
+    )
     def get_daily_report(self, request, pk=None):
         operator = User.objects.get(pk=pk)
         date_str = request.query_params.get('date')
@@ -313,7 +319,6 @@ class OperatorStatisticReportPDFViewSet(ViewSet):
 
 
 class OperatorServedReportExcelViewSet(ViewSet):
-
     @action(detail=True, methods=['get'])
     @swagger_auto_schema(manual_parameters=[
         openapi.Parameter(
@@ -338,7 +343,9 @@ class OperatorServedReportExcelViewSet(ViewSet):
             required=True,
             description='End hour (0-23)'
         )
-    ])
+    ],
+    operation_summary="Отчет, обслуженные талоны оператора за промежуток часов. EXCEL",
+    operation_description="Отчет в формате EXCEL, обслуженные талоны оператора за часы.")
     def get_hour_report(self, request, pk=None):
 
         operator_id = pk
@@ -421,7 +428,10 @@ class OperatorServedReportExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет, обслуженные талоны оператора за день. EXCEL",
+    operation_description="Отчет в формате Excel, обслуженные талоны оператора за выбранную дату."
+    )
     def get_day_report(self, request, pk=None):
 
         operator_id = pk
@@ -513,7 +523,10 @@ class OperatorServedReportExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет, обслуженные талоны оператора за выбранный промежуток дней. EXCEL",
+    operation_description="Отчет в формате Excel, обслуженные талоны оператора за выбранный промежуток дней."
+    )
     def get_days_report(self, request, pk=None):
 
         operator_id = pk
@@ -596,7 +609,10 @@ class OperatorServedReportExcelViewSet(ViewSet):
             format=openapi.FORMAT_INT64,
             required=True,
             description='Date in the format "YYYY"')
-    ])
+    ],
+    operation_summary="Отчет, обслуженные талоны оператора за год. EXCEL",
+    operation_description="Отчет в формате Excel, обслуженные талоны оператора за выбранный год."
+    )
     def get_year_report(self, request, pk=None):
 
         operator_id = pk
@@ -699,7 +715,10 @@ class OperatorCancelledReportExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет, отмененные талоны оператора за день. EXCEL",
+    operation_description="Отчет в формате Excel, отмененные талоны оператора за выбранную дату."
+    )
     def get_day_report(self, request, pk=None):
 
         operator_id = pk
@@ -777,7 +796,10 @@ class OperatorCancelledReportExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет, отмененные талоны оператора за промежуток дней. EXCEL",
+    operation_description="Отчет в формате Excel, отмененные талоны оператора за выбранный промежуток дней."
+    )
     def get_days_report(self, request, pk=None):
 
         operator_id = pk
@@ -847,7 +869,10 @@ class OperatorCancelledReportExcelViewSet(ViewSet):
             format=openapi.FORMAT_INT64,
             required=True,
             description='Date in the format "YYYY"')
-    ])
+    ],
+    operation_summary="Отчет, отмененные талоны оператора за год. EXCEL",
+    operation_description="Отчет в формате Excel, отмененные талоны оператора за выбранный год."
+    )
     def get_year_report(self, request, pk=None):
 
         operator_id = pk

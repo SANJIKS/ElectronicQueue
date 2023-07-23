@@ -42,6 +42,7 @@ class Queue(models.Model):
     is_blocked = models.BooleanField(default=False)
     waiting_time_operator = models.PositiveIntegerField(default=120)
     auto_transfer = models.BooleanField(default=True)
+    max_transfers = models.PositiveSmallIntegerField(default=5)
 
     def __str__(self):
         return f'{self.name}-{self.branch.name}'  

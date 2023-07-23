@@ -32,7 +32,10 @@ class BookingReportViewSet(ViewSet):
             format=openapi.FORMAT_INT64,
             required=True,
             description='Date in the format "YYYY"')
-    ])
+    ],
+    operation_summary="Отчет предварительных бронирований за год. WORD",
+    operation_description="Отчет в формате Word, количество предварительных бронирований за год"
+    )
 
     def get_monthly_booking_statistics(self, request):
         year = request.query_params.get('year')
@@ -80,8 +83,6 @@ class BookingReportViewSet(ViewSet):
 
 
 
-
-
 class CustomersCancelledExcelViewSet(ViewSet):
     @action(detail=False, methods=['get'])
     @swagger_auto_schema(manual_parameters=[
@@ -92,7 +93,10 @@ class CustomersCancelledExcelViewSet(ViewSet):
             format=openapi.FORMAT_INT64,
             required=True,
             description='Date in the format "YYYY"')
-    ])
+    ],
+    operation_summary="Отчет отмененных талонов за год. EXCEL",
+    operation_description="Отчет в формате Excel, отмененные талоны за год"
+    )
     def get_year_report(self, request):
 
         year = request.query_params.get('year')
@@ -160,7 +164,10 @@ class CustomersCancelledExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет отмененных талонов за день. EXCEL",
+    operation_description="Отчет в формате Excel, отмененные талоны за день"
+    )
     def get_day_report(self, request):
 
         date = request.query_params.get('date')
@@ -250,7 +257,10 @@ class CustomersCancelledExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет отмененных талонов за промежуток дней. EXCEL",
+    operation_description="Отчет в формате Excel, отмененные талоны за выбранный промежуток дней"
+    )
     def get_days_report(self, request):
 
         start_date = request.query_params.get('start_date')
@@ -345,7 +355,11 @@ class CustomersServedExcelViewSet(ViewSet):
             format=openapi.FORMAT_INT64,
             required=True,
             description='Date in the format "YYYY"')
-    ])
+    ],
+    operation_summary="Отчет обслуженных талонов за год. EXCEL",
+    operation_description="Отчет в формате Excel, обслуженные талоны за год"
+
+    )
     def get_year_report(self, request):
 
         year = request.query_params.get('year')
@@ -413,7 +427,10 @@ class CustomersServedExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет обслуженных талонов за день. EXCEL",
+    operation_description="Отчет в формате Excel, обслуженные талоны за выбранный день"
+    )
     def get_day_report(self, request):
 
         date = request.query_params.get('date')
@@ -503,7 +520,10 @@ class CustomersServedExcelViewSet(ViewSet):
             required=True,
             description='Date in the format "YYYY-MM-DD"'
         )
-    ])
+    ],
+    operation_summary="Отчет обслуженных талонов за промежуток дней. EXCEL",
+    operation_description="Отчет в формате Excel, обслуженные талоны за выбранный промежуток дней"
+    )
     def get_days_report(self, request):
 
         start_date = request.query_params.get('start_date')

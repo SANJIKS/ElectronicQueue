@@ -42,12 +42,13 @@ class OperatorViewSet(viewsets.ViewSet):
         elif a == 'move_to_the_end':
             return [IsOperator()]
 
-
+    @swagger_auto_schema(
+        operation_summary="Сменить статус оператора(Online/Offline)",
+        operation_description="""
+        Эндпоинт для смены статуса оператора. Пользователь который отправляет запрос должен быть оператором.""",
+    )
     @action(detail=False, methods=['post'])
     def change_status(self, request):
-        """
-        Эндпоинт для смены статуса оператора(Онлайн или Оффлайн) 
-        """
         operator = self.request.user
         if not operator.window.is_online:
             operator.window.is_online = True
@@ -59,12 +60,12 @@ class OperatorViewSet(viewsets.ViewSet):
         return Response({'status': 'Offline'})
 
 
+    @swagger_auto_schema(
+        operation_summary="Вызов посетителя",
+        operation_description="Эндпоинт для вызова посетителя к оператору, если автоматический перенос талона в конец очереди включён, то талон будет переноситься в конец очереди через то время, которое указал администратор, и удалятся, после количества вызовов указанным администратором. Оператор должен быть свободен и онлайн. Необходимо передать id талона",
+    )
     @action(detail=True, methods=['get'])
     def call(self, request, pk=None):
-        """
-        Эндпоинт для вызова талона к оператору
-        Если посетитель не подходит 5-й раз, его талон отменяется
-        """
         customer = Customer.objects.get(pk=pk)
         
         if customer.queue.auto_transfer:
@@ -86,15 +87,12 @@ class OperatorViewSet(viewsets.ViewSet):
 
         return Response({'message': f'{customer.ticket_number}, подойдите пожалуйста к {self.request.user.window.number} окну'}, status=200)
 
-
+    @swagger_auto_schema(
+        operation_summary="Начать обслуживать",
+        operation_description="Эндпоинт для начала обслуживания посетителя, поля window и operator меняются на данного оператора, позиции всех остальных талонов сдвигаются на 1. Оператор должен быть свободен и онлайн. Необходимо передать id талона",
+    )
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
-        """
-        Эндпоинт для начала обслуживания
-        Нужно передать ID талона
-        После чего поле operator у талона сменяется на того от кого пришел запрос
-        Поле served_start меняется на текущее время
-        """
         customer = Customer.objects.get(pk=pk)
         try:
             waiting_list = Waiting_List.objects.get(customer=customer)
@@ -142,13 +140,12 @@ class OperatorViewSet(viewsets.ViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-
+    @swagger_auto_schema(
+        operation_summary="Отправить в лист ожидания",
+        operation_description="Эндпоинт для отправки посетителя в лист ожидания для заполнения документов или т.п. Для отправки в лист ожидания оператор должен обслуживать этот талон, позиция талона становиться нулевым, для вызова вне очереди позже, а все данные об оператора и окне у талона обнуляются, позиции всех остальных талонов сдвигаются на 1. Необходимо передать id талона.",
+    )
     @action(detail=True, methods=['post'])
     def post_on_waiting_list(self, request, pk=None):
-        """
-        Эндпоинт для перевода талона в лист ожидания
-        Нужно передать ID талона
-        """
         customer = Customer.objects.get(pk=pk)
 
         if hasattr(customer, 'waiting_list'):
@@ -204,15 +201,10 @@ class OperatorViewSet(viewsets.ViewSet):
             required=['window']
         ),
         operation_summary="Перенос окна другому оператору(окну)",
-        operation_description="Эндпоинт для переноса талона другому окну, другое окно становится занятым, а нынешнее освобождается, нужно передать ID окна и ID талона. Оператор должен обслуживать данный талон для того чтобы перевести на другое окно.",
+        operation_description="Эндпоинт для переноса талона другому окну, другое окно становится занятым, а нынешнее освобождается, позиции всех остальных талонов сдвигаются на 1, нужно передать ID окна и ID талона. Оператор должен обслуживать данный талон для того чтобы перевести на другое окно. Создаётся протокол о переносе талона для оператора и талона.",
     )
     @action(detail=True, methods=['patch'])
     def shift_window(self, request, pk=None):
-        """
-        Эндпоинт для перевода талона в другое окно(другому оператору)
-        Блокировка передачи при превышении лимита
-        Необходимо передать ID окна и ID талона
-        """
         customer = Customer.objects.get(pk=pk)
         new_window_id = request.data.get('window')  
 
@@ -224,7 +216,7 @@ class OperatorViewSet(viewsets.ViewSet):
         if customer.window == new_window:
             return Response({'message': 'Талон уже обслуживается этим окном.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if customer.window.number_of_transfers == customer.window.max_transfers:
+        if customer.window.number_of_transfers == customer.queue.max_transfers:
             return Response({'message': 'Вы слишком много переводили талоны.'}, status=status.HTTP_400_BAD_REQUEST)    
 
         
@@ -267,12 +259,12 @@ class OperatorViewSet(viewsets.ViewSet):
         return Response({'message': 'Талон успешно перенесен на другую очередь.'})
     
 
+    @swagger_auto_schema(
+        operation_summary="Перенести в конец очереди",
+        operation_description="Эндпоинт для переноса талона в конец очереди вручную, позиция талона становится последней в очереди, а у остальных позиция сдвигается на 1. Оператор должен быть свободен и онлайн. Необходимо передать id талона.",
+    )
     @action(detail=True, methods=['post'])
     def move_to_the_end(self, request, pk=None):
-        """
-        Эндпоинт для перевода талона в конец очереди, поле position сменяется на последнее
-        Нужно передать ID талона
-        """
         customer = Customer.objects.get(pk=pk)
 
         queue = customer.queue.pk
@@ -304,13 +296,12 @@ class OperatorViewSet(viewsets.ViewSet):
         return Response({'message': 'Талон перемещен в конец очереди.'})
     
 
+    @swagger_auto_schema(
+        operation_summary="Закончить обслуживание",
+        operation_description='Эндпоинт для обонзначения талона как "Обслуженный", и обновления среднего времени ожидания в очереди, создаётся протокол об обслуживании талона для талона и оператора. Необходимо передать id талона, оператор должен обслуживать данный талон',
+    )
     @action(detail=True, methods=['post'])
     def mark_as_served(self, request, pk=None):
-        """
-        Эндпоинт для обновления статуса обслуживания талона как "Обслужен"
-        Сделать это может только тот оператор, который обслуживает данный талон
-        Нужно передать ID талона
-        """
         customer = Customer.objects.get(pk=pk)
         
         if customer.is_served:
@@ -351,14 +342,12 @@ class OperatorViewSet(viewsets.ViewSet):
 
         return Response({'message': 'Талон обслужен и среднее время обновлено'})
     
-
+    @swagger_auto_schema(
+        operation_summary="Отменить обслуживание талона",
+        operation_description='Эндпоинт для обозначения талона как "Отмененный", среднее время обслуживания не обновляется, создаётся протокол об отменене обслуживания талона для оператора и талона. Необходимо передать id талона, оператор должен обслуживать данный талон.',
+    )
     @action(detail=True, methods=['post'])
     def mark_as_cancelled(self, request, pk=None):
-        """
-        Эндпоинт для обновления статуса обслуживания талона как "Отменен"
-        Сделать это может только тот оператор, который обслуживает данный талон
-        Нужно передать ID талона
-        """
         customer = Customer.objects.get(pk=pk)
 
         if customer.is_served == False:
@@ -396,12 +385,13 @@ class OperatorViewSet(viewsets.ViewSet):
         return Response({'message': 'Талон отменен.'})
 
 
-class OperatorGetViewSet(viewsets.ViewSet):   
+class OperatorGetViewSet(viewsets.ViewSet):
+    @swagger_auto_schema(
+        operation_summary="Получить список ожидающих талонов.",
+        operation_description="Эндпоинт для получения списка талонов которые необходимо обслужить оператору. Возвращается список талонов отфильтрованных по дате, очереди которые обслуживает данный оператор, не обслужены, и те которые не были перенесены на другое окно. Отсортированы по позиции. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_customers_in_queue(self, request):
-        """
-        Эндпоинт для получения талонов в очередях которые обслуживает оператор
-        """
         queue = self.request.user.queues.all()  
         
         if not queue:
@@ -412,6 +402,11 @@ class OperatorGetViewSet(viewsets.ViewSet):
         serializer = GetQueueCustomersSerializer(queryset, many=True)
         return Response(serializer.data, status=200)
 
+
+    @swagger_auto_schema(
+        operation_summary="Получить талон который обслуживает оператор",
+        operation_description="Эндпоинт возвращает талон который в данный момент обслуживает оператор. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_my_customer(self, request):
         queryset = Customer.objects.get(operator=self.request.user, is_served=None, served_start__date=today)
@@ -419,11 +414,12 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
     
 
+    @swagger_auto_schema(
+        operation_summary="Получить список талонов переведенных другому оператору.",
+        operation_description="Эндпоинт возвращает список талонов которые оператор перевел на другое окно. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def shift_list(self, request):
-        """
-        Эндпоинт для получения списка переведенных в другое окно талонов
-        """
         operator = self.request.user
         shifted_tickets = Customer.objects.filter(old_operator=operator)
 
@@ -432,11 +428,12 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
 
 
+    @swagger_auto_schema(
+        operation_summary="Лист ожидания",
+        operation_description="Эндпоинт возвращает лист ожидания в котором находятся талоны, услуги которых обслуживает оператор. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_waiting_list(self, request):
-        """
-        Эндпоинт для получения списка ожидания
-        """
         operator = self.request.user
 
         queue_ids = operator.queues.values_list('id', flat=True)
@@ -447,6 +444,10 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
     
 
+    @swagger_auto_schema(
+        operation_summary="Получить все окна в филиале",
+        operation_description="Эндпоинт возвращает все окна которые есть в филиале в котором работает оператор. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_all_windows(self, request):
         branch = self.request.user.window.branch
@@ -455,6 +456,10 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
     
 
+    @swagger_auto_schema(
+        operation_summary="Получить доступные окна для перевода талона",
+        operation_description="Эндпоинт возвращает список доступных окон для перевода к посетителя к ним. Окна фильтруются по очереди которые могут обслуживать, они должны быть онлайн и свободны. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_windows_for_transfer(self, request):
         operator = self.request.user
@@ -470,6 +475,10 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
 
 
+    @swagger_auto_schema(
+        operation_summary="Получить отмененные талоны оператора",
+        operation_description="Эндпоинт возвращает список отмененных талонов за сегодня. Пользователь который отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_cancelled_customers(self, request):
         operator = self.request.user
@@ -479,6 +488,10 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
+    @swagger_auto_schema(
+        operation_summary="Получить обслуженные талоны оператора",
+        operation_description="Эндпоинт возвращает список обслуженных талонов за сегодня. Пользователь которые отправляет запрос должен быть оператором.",
+    )
     @action(detail=False, methods=['get'])
     def get_served_customers(self, request):
         operator = self.request.user
@@ -488,6 +501,12 @@ class OperatorGetViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
+    @swagger_auto_schema(
+        operation_summary="Получить все обслуженные талоны оператора",
+        operation_description="""
+        Функционал: Эндпоинт возвращает список обслуженных талонов за все время.
+        Permissions: Пользователь которые отправляет запрос должен быть оператором"""
+    )
     @action(detail=False, methods=['get'])
     def get_served_customers_all(self, request):
         operator = self.request.user
@@ -499,13 +518,14 @@ class OperatorGetViewSet(viewsets.ViewSet):
 
 class RegistratorViewSet(viewsets.ViewSet):
     permission_classes = [IsRegistrator]
+    
+    @swagger_auto_schema(
+        operation_summary="Получить список талонов за сегодня",
+        operation_description="""
+        Эндпоинт возвращает все талоны за сегодня, и филиала в котором работает регистратор. Пользователь который отправляет запро с должен быть регистратором."""
+    )
     @action(detail=True, methods=['get'])
     def get_today_tickets(self, request, pk=None):
-        """
-        Эндпоинт для регистратора
-        Получение всех выданных талонов на сегодняшний день
-        Нужно передать ID филиала
-        """
         try:
             branch = Branch.objects.get(pk=pk)
         except Branch.DoesNotExist:
@@ -517,6 +537,11 @@ class RegistratorViewSet(viewsets.ViewSet):
         return Response(serializer.data)
     
 
+    @swagger_auto_schema(
+        operation_summary="Получить список предварительных записей от сегодняшней даты",
+        operation_description="""
+        Эндпоинт возвращает список пред. записей в филиале в котором работает регистратор, и даты записей который начинаются с сегодняшней. Пользователь который отправляет запрос должен быть регистратором. """
+    )
     @action(detail=True, methods=['get'])
     def get_bookings(self, request, pk=None):
         today = date.today()
@@ -525,16 +550,13 @@ class RegistratorViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     
-    @action(detail=False, methods=['post'])
     @swagger_auto_schema(
-        request_body=GetByProps,
-        operation_summary="Перенос окна другому оператору(окну)",
-        operation_description="Эндпоинт для переноса талона другому окну, другое окно становится занятым, а нынешнее освобождается, нужно передать ID окна и ID талона. Оператор должен обслуживать данный талон для того чтобы перевести на другое окно.",
+        operation_summary="Поиск талона по различным реквизитам.",
+        operation_description="""
+        Эндпоинт для поиска талона по различным реквизитам таким как ФИО, номер телефона, паспорт. Поиск будут идти по тем реквизитам, которые были переданы. Пользователь который отправляет запрос должен быть регистратором."""
     )
+    @action(detail=False, methods=['post'])
     def customer_by_props(self, request):
-        """
-        Эндпоинт для поиска талонов по различным реквизитам
-        """
         filters = {}
         if 'first_name' in request.data and request.data['first_name'] != "":
             filters['first_name'] = request.data['first_name']
@@ -553,11 +575,12 @@ class RegistratorViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
     
 
-    @action(detail=False, methods=['post'])
     @swagger_auto_schema(
-        request_body=GetByProps,
-        operation_summary="Перенос окна другому оператору(окну)",
-        operation_description="Эндпоинт для переноса талона другому окну, другое окно становится занятым, а нынешнее освобождается, нужно передать ID окна и ID талона. Оператор должен обслуживать данный талон для того чтобы перевести на другое окно.",)
+        operation_summary="Поиск предварительной записи по различным реквизитам",
+        operation_description="""
+        Эндпоинт для поиска пред. записей по реквизитам которые были переданы в запрос, таким как ФИО, номер телефона, паспорт. Пользователь который отправляет запрос должен быть регистратором."""
+    )
+    @action(detail=False, methods=['post'])
     def get_bookings_by_props(self, request):
         filters = {}
         if 'first_name' in request.data and request.data['first_name'] != "":
@@ -577,12 +600,13 @@ class RegistratorViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=200)
 
 
+    @swagger_auto_schema(
+        operation_summary="Отменить талон",
+        operation_description="""
+        Эндпоинт для отмены талона, позиции остальных талонов сдвигаются на 1. Пользователь который отправляет запрос должен быть регистратором."""
+    )
     @action(detail=True, methods=['post'])
     def mark_as_cancelled(self, request, pk=None):
-        """
-        Эндпоинт для обновления статуса обслуживания талона как "Отменен"
-        Для регистратора
-        """
         customer = Customer.objects.get(pk=pk)
 
         if customer.is_served == False:
@@ -598,19 +622,15 @@ class RegistratorViewSet(viewsets.ViewSet):
         shift_positions(pk, queue, current_position)
 
         return Response({'message': 'Талон отменен.'})
-    
 
-    @action(detail=True, methods=['patch'])
+
     @swagger_auto_schema(
-    request_body=ChangeNotes,
-    operation_summary="Перенос окна другому оператору(окну)",
-    operation_description="Эндпоинт для переноса талона другому окну, другое окно становится занятым, а нынешнее освобождается, нужно передать ID окна и ID талона. Оператор должен обслуживать данный талон для того чтобы перевести на другое окно.",
+        operation_summary="Вписать дополнительную информацию о клиенте",
+        operation_description="""
+        Эндпоинт для добавления доп. информации о посетителе в поле notes талона. Пользователь который отправляет запрос должен быть регистратором."""
     )
+    @action(detail=True, methods=['patch'])
     def write_info(self, request, pk=None):
-        """
-        Эндпоинт для внесения доп. сведений о талоне(посетителе)
-        Нужно передать ID талона и в json передать notes: "инфо"
-        """
         if not pk:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         

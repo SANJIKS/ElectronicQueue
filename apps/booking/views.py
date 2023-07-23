@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from decouple import config
 from django.urls import reverse
+from drf_yasg.utils import swagger_auto_schema
 
 
 User = get_user_model()
@@ -34,7 +35,15 @@ class BookingViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
     
-        
+
+    @swagger_auto_schema(
+        operation_summary='Создать предварительную запись',
+        operation_description="""
+        Эндпоинт для создания предварительной записи, необходимо передать время, дату и очередь на которую записываетесь.
+        Пользователь должен быть авторизован.
+        Нельзя записаться в нерабочий день, на прошлое время и время в которое филиал не работает. И также нельзя записаться на один день 2 раза.
+        Также нельзя записаться если это время уже занято."""
+    )
     def create(self, request, *args, **kwargs):
         """
         Эндпоинт для предварительной записи в очередь
@@ -103,14 +112,19 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     """ Метод, который представляет эндпоинт для печати талона по предварительной записи
      и создания талона с данными этой записи """
+    @swagger_auto_schema(
+        operation_summary='Распечатать и создать талон по предварительной записи',
+        operation_description="""
+        Эндпоинт для создания талона по пред. записи, время и дата пред. записи будут установлены на талоне.
+        Вернется также эндпоинт для печати талона.
+        Нельзя распечатать талон если он просрочен (дата записи уже прошла).
+        Распечатать можно только в день записи
+
+        Чтобы распечатать необходимо ввести пин-код который был выдан при создании предварительной записи"""
+    )
     @action(detail=False, methods=['post'])
     def register_customer(self, request):
-        """
-        Эндпоинт для печати талона по предварительной записи
-        Нужно передать ФИО и пин-код талона
-        """
         pin = request.data.get('pin')  # Извлечение пин-кода талона из запроса
-
 
         matching_booking = Booking.objects.filter(
         pin=pin,
@@ -170,9 +184,43 @@ class BookingViewSet(viewsets.ModelViewSet):
             "ticket_broadcast",
             {
                 "type": "send_ticket_list",
-                "event": {}  # Передаем пустой объект в качестве аргумента event
+                "event": {}  
             }
         )
 
 
         return Response({'message': 'Талон успешно выдан!', 'customer_id': customer_id, 'redirect_url': redirect_url}, status=200)
+    
+
+    @swagger_auto_schema(
+        operation_summary='Retrieve чтение предварительной записи',
+        operation_description="""
+        Эндпоинт для получения предварительной записи по его id"""
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить предварительную запись',
+        operation_description="""
+        Эндпоинт для обновления предварительной записи"""
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Обновить предварительную запись партийно',
+        operation_description="""
+        Эндпоинт для партийного обновления предварительной записи"""
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_summary='Удалить предварительную запись',
+        operation_description="""
+        Эндпоинт для удаления предварительной записи"""
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+

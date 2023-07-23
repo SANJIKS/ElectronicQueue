@@ -98,7 +98,6 @@ class Window(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='windows')  # Филиал, к которому принадлежит окно
     operator = models.OneToOneField(User, on_delete=models.CASCADE)  # Оператор, назначенный на окно
     number_of_transfers = models.PositiveSmallIntegerField(default=0)  # Количество переводов на другое окно
-    max_transfers = models.PositiveSmallIntegerField(default=5)  # Максимальное количество переводов
     is_online = models.BooleanField(default=False)  # Флаг, указывающий, на месте ли сотрудник
     schedule_start = models.IntegerField(default=9)  # Начало рабочего дня окна (часы)
     schedule_end = models.IntegerField(default=18)  # Конец рабочего дня окна (часы)
