@@ -181,11 +181,11 @@ class CabinetConsumer(AsyncWebsocketConsumer):
 
             # Проходимся по каждому оператору.
             for operator in operators:
-                # Получаем окна, которые обслуживает оператор.
-                operator_window = operator.window
-
-                cabinets.append(operator_window.cabinet)
-            
+                # Проверяем, связан ли оператор с окном.
+                if operator.window is not None:
+                    # Если связан, добавляем привязанный кабинет в список.
+                    cabinets.append(operator.window.cabinet)
+    
             return cabinets
         
         cabinets = await sync_to_async(get_cabinets_sync)(ticket)

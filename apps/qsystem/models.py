@@ -28,14 +28,14 @@ class Services(models.Model):
 class Queue(models.Model): 
     name = models.CharField(max_length=100)  # Поле для хранения имени очереди
     branch = models.ForeignKey(Branch, default=1, related_name='queues', on_delete=models.CASCADE) # Филиал
-    description = models.CharField(max_length=200, blank=True, null=True) # Поле для хранения описания очереди
+    description = models.CharField(max_length=200) # Поле для хранения описания очереди
     documents = models.TextField(null=True, blank=True) # Документы
     optional_documents = models.TextField(null=True, blank=True) # Необязательные документы
     average_waiting_time = models.PositiveIntegerField(default=0)  # Поле для хранения среднего времени ожидания
     max_waiting_time = models.PositiveIntegerField(default=30) # Поле для хранения максимального времени ожидания
     operator = models.ManyToManyField(User, related_name='queues') # Связь с моделью пользователя (оператора)
-    symbol = models.CharField(max_length=2, null=True, blank=True) # Символ очереди
-    services = models.ForeignKey(Services, on_delete=models.CASCADE, related_name='queues', null=True, blank=True) # Тип услуги
+    symbol = models.CharField(max_length=2) # Символ очереди
+    services = models.ForeignKey(Services, on_delete=models.CASCADE, related_name='queues') # Тип услуги
     max_calls = models.PositiveSmallIntegerField(default=3)
     print_start = models.TimeField(default="9:00") 
     print_end = models.TimeField(default="20:00")
@@ -55,13 +55,12 @@ class Queue(models.Model):
 #Модель Талона
 class Customer(models.Model):
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='customers')  # Внешний ключ для связи с моделью очереди
-    # user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customers_at_user')  # Внешний ключ для связи с моделью пользователей
     ticket_number = models.CharField(max_length=10)  # Поле для хранения номера талона
-    # first_name = models.CharField(max_length=50, null=True, blank=True)
-    # last_name = models.CharField(max_length=50, null=True, blank=True)
-    # surname = models.CharField(max_length=50, null=True, blank=True)
-    # pasport = models.CharField(max_length=40, null=True, blank=True)
-    # phone_number = models.CharField(max_length=100, null=True, blank=True)
+    first_name = models.CharField(max_length=50, null=True, blank=True)
+    last_name = models.CharField(max_length=50, null=True, blank=True)
+    surname = models.CharField(max_length=50, null=True, blank=True)
+    pasport = models.CharField(max_length=40, null=True, blank=True)
+    phone_number = models.CharField(max_length=100, null=True, blank=True)
     position = models.IntegerField(null=True, blank=True) # Поле для хранения позиции в очереди
     created_at = models.DateTimeField(auto_now_add=True)  # Поле для хранения даты и времени создания
     is_served = models.BooleanField(default=None, null=True)  # Поле для хранения статуса обслуживания

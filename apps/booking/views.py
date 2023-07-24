@@ -62,6 +62,12 @@ class BookingViewSet(viewsets.ModelViewSet):
         time = serializer.validated_data.get('time')  # Извлечение времени из валидированных данных
         date_ = serializer.validated_data.get('date')  # Извлечение даты из валидированных данных
         queue = serializer.validated_data.get('queue')  # Извлечение очереди из валидированных данных
+        first_name = serializer.validated_data.get('first_name')
+        last_name = serializer.validated_data.get('last_name')
+        surname = serializer.validated_data.get('surname')
+        phone_number = serializer.validated_data.get('phone_number')
+        pasport = serializer.validated_data.get('pasport')
+
 
         branch = queue.branch
 
@@ -174,7 +180,12 @@ class BookingViewSet(viewsets.ModelViewSet):
             time=matching_booking.time,
             category='booked',
             ticket_number=ticket_number,
-            position=0
+            position=0,
+            first_name=matching_booking.first_name,
+            last_name=matching_booking.last_name,
+            surname=matching_booking.surname,
+            phone_number=matching_booking.phone_number,
+            pasport=matching_booking.pasport
         ) # Создание объекта Customer 
 
         customer.save() # Сохранение объекта Customer в базе данных

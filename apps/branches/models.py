@@ -20,13 +20,13 @@ class Region(models.Model):
 class Branch(models.Model):
     name = models.CharField(max_length=200) #поле для хранения названия филиала
     phone = models.CharField(max_length=20)  # Поле для хранения телефона филиала
-    admin = models.ForeignKey(User, related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
+    admin = models.ForeignKey(User, related_name='branches', on_delete=models.CASCADE)
     schedule_start = models.TimeField(default="9:00") # Начало рабочего дня
     schedule_end = models.TimeField(default="20:00") # Конец рабочего дня
     # location = PlainLocationField(based_fields=['city'], zoom=7) # Поле локации
-    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='branches', null=True, blank=True) # Поле для хранения области
-    city = models.CharField(max_length=100, null=True, blank=True) # Город
-    street = models.CharField(max_length=100, null=True, blank=True) # Улица
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='branches') # Поле для хранения области
+    city = models.CharField(max_length=100) # Город
+    street = models.CharField(max_length=100) # Улица
 
 
     def __str__(self):
@@ -102,8 +102,8 @@ class Window(models.Model):
     schedule_start = models.IntegerField(default=9)  # Начало рабочего дня окна (часы)
     schedule_end = models.IntegerField(default=18)  # Конец рабочего дня окна (часы)
     is_busy = models.BooleanField(default=False)  # Флаг, указывающий, обслуживает ли оператор клиента
-    floor = models.ForeignKey(Floor, on_delete=models.CASCADE, null=True, blank=True)
-    cabinet = models.ForeignKey(Cabinet, on_delete=models.CASCADE, null=True, blank=True)
+    floor = models.ForeignKey(Floor, on_delete=models.CASCADE)
+    cabinet = models.ForeignKey(Cabinet, on_delete=models.CASCADE)
 
     def __str__(self):
         return f'Окно №{self.number} - {self.branch.name} - {self.operator.username}'
