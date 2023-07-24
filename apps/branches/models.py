@@ -48,7 +48,7 @@ class Board(models.Model):
     speed = models.IntegerField(default=2)
 
     def __str__(self):
-        return f'{self.board.number} - {self.board.branch.name}'
+        return f'{self.number} - {self.branch.name}'
     
     class Meta:
         verbose_name = 'Табло'
