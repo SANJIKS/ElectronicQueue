@@ -92,7 +92,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer  
         fields = '__all__'  
-        read_only_fields = ('time', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
+        # read_only_fields = ('time', 'ticket_number', 'is_served', 'served_at', 'position', 'served_start', 'number_of_calls', 'notes', 'operator', 'window', 'old_operator',)
         list_serializer_class = CustomerListSerializer
 
     def to_representation(self, instance):
