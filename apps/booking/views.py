@@ -35,6 +35,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
     
+    @swagger_auto_schema(
+        operation_summary='Получить все предварительные записи',
+        operation_description="""
+        Эндпоинт для получения всех предварительных записей"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_summary='Создать предварительную запись',

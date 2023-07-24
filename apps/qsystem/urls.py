@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import QueueViewSet, CustomerViewSet, PrintingView
+from .views import QueueViewSet, CustomerViewSet, PrintingView, voice_bot
 
 router = routers.DefaultRouter()
 # router.register(r'queues', QueueViewSet, basename='queue')
@@ -20,6 +20,7 @@ queue_detail = QueueViewSet.as_view({
 })
 
 urlpatterns = [
+    path('ticket_dictor/', voice_bot),
     path('queues/', queue_list),
     path('customers/', include(router.urls)),
     path('queues/<int:pk>/', queue_detail),

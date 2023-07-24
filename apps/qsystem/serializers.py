@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from pytz import timezone 
+import re
 
 from rest_framework import serializers
 from django.db import models
@@ -156,7 +157,8 @@ class CustomerSerializer(serializers.ModelSerializer):
         last_ticket_number = max_ticket_number.get('ticket_number__max')
 
         if last_ticket_number is not None:
-            max_ticket_number = int(last_ticket_number[2:]) + 1
+            last_ticket_number = re.sub(r'\D', '', last_ticket_number)
+            max_ticket_number = int(last_ticket_number) + 1
         else:
             max_ticket_number = 1
         

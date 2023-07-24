@@ -145,6 +145,10 @@ class CustomTokenVerifyView(TokenVerifyView):
     
 
 class CustomUserViewSet(DjoserViewSet):
+    @swagger_auto_schema(operation_summary='Получить всех пользователей', operation_description="""Эндпоинт для получения всех""")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
     @swagger_auto_schema(operation_summary='Мой аккаунт', operation_description="This endpoints is used for edit user's account")
     def me(self, request, *args, **kwargs):
         return super().me(request, *args, **kwargs)

@@ -24,6 +24,14 @@ class AdViewSet(ModelViewSet):
     serializer_class = AdSerializer
 
     @swagger_auto_schema(
+        operation_summary='Получить всю рекламу',
+        operation_description="""
+        Эндпоинт для получения всех реклам"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
         operation_summary='Добавить рекламу',
         operation_description="""
         Эндпоинт для добавления рекламы, видео/фото"""
@@ -80,6 +88,14 @@ class BoardViewSet(ModelViewSet):
         return Response(serializer.data)
     
     @swagger_auto_schema(
+        operation_summary='Получить все табло',
+        operation_description="""
+        Эндпоинт для получения всех табл"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
         operation_summary='Добавить табло',
         operation_description="""
         Эндпоинт для создания табла"""
@@ -131,6 +147,14 @@ class WindowViewSet(ModelViewSet):
     queryset = Window.objects.all()
     serializer_class = WindowSerializer
     permission_classes = [IsAdmin]
+
+    @swagger_auto_schema(
+        operation_summary='Получить все окна',
+        operation_description="""
+        Эндпоинт для получения всех окон"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_summary='Создать окно  (Для администатора)',
@@ -185,6 +209,14 @@ class FloorViewSet(ModelViewSet):
     permission_classes = [IsAdmin]
 
     @swagger_auto_schema(
+        operation_summary='Получить все этажи',
+        operation_description="""
+        Эндпоинт для получения всех этажей"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
         operation_summary='Добавить этажи  (Для администатора)',
         operation_description="""
         Эндпоинт для создания этажей филиала"""
@@ -236,6 +268,14 @@ class CabinetViewSet(ModelViewSet):
     serializer_class = CabinetSerializer
     permission_classes = [IsAdmin]
 
+    @swagger_auto_schema(
+        operation_summary='Получить все кабинеты',
+        operation_description="""
+        Эндпоинт для получения всех кабинетов"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
     @swagger_auto_schema(
         operation_summary='Создать кабинет  (Для администатора)',
         operation_description="""
@@ -289,6 +329,14 @@ class CalendarViewSet(ModelViewSet):
     permission_classes = [IsAdmin]
 
     @swagger_auto_schema(
+        operation_summary='Получить все календари',
+        operation_description="""
+        Эндпоинт для получения всех календарей филиалов"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
         operation_summary='Добавить нерабочий день  (Для администатора)',
         operation_description="""
         Эндпоинт для добавления даты, в который филиал не будет работать"""
@@ -334,6 +382,14 @@ class BaseCalendarViewSet(ModelViewSet):
     serializer_class = BaseCalendarSerializer
     permission_classes = [IsAdmin]
 
+    @swagger_auto_schema(
+        operation_summary='Получить все общие календари',
+        operation_description="""
+        Эндпоинт для получения всех общих календарей"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
     @swagger_auto_schema(
         operation_summary='Добавить нерабочий день для всех филиалов  (Для администатора)',
         operation_description="""
@@ -396,7 +452,14 @@ class RegionViewSet(ModelViewSet):
         serializer = BranchSerializer(branches, many=True)  # Сериализация списка филиалов
         return Response(serializer.data, status=200)  # Возврат данных филиалов в виде ответа
             
-
+    @swagger_auto_schema(
+        operation_summary='Получить все области',
+        operation_description="""
+        Эндпоинт для получения всех областей"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
     @swagger_auto_schema(
         operation_summary='Добавить область  (Для администатора)',
         operation_description="""
@@ -472,7 +535,14 @@ class BranchViewSet(ModelViewSet):
 
         return Response(serializer.data, status=200)  # Возврат списка типов услуг
 
-
+    @swagger_auto_schema(
+        operation_summary='Получить все филиалы',
+        operation_description="""
+        Эндпоинт для получения всех филиалов"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
     @swagger_auto_schema(
         operation_summary='Добавить филиал  (Для администатора)',
         operation_description="""

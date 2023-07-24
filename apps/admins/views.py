@@ -41,6 +41,14 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
 
     @swagger_auto_schema(
+        operation_summary='Получить всех пользователей',
+        operation_description="""
+        Эндпоинт для получения всех пользователей"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
         operation_summary='Добавить пользователя  (Для администатора)',
         operation_description="""
         Эндпоинт для создания пользователя"""
@@ -88,7 +96,7 @@ class UsersProfileViewSet(viewsets.ViewSet):
         if self.action == 'get':
             return [IsAuthenticated()]
         return super().get_permissions()
-
+    
 
     @swagger_auto_schema(
         operation_summary="Получить профиль пользователя",
