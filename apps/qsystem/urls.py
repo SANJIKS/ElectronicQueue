@@ -20,7 +20,7 @@ queue_detail = QueueViewSet.as_view({
 })
 
 urlpatterns = [
-    path('ticket_dictor/', voice_bot),
+    # path('ticket_dictor/', voice_bot),
     path('queues/', queue_list),
     path('customers/', include(router.urls)),
     path('queues/<int:pk>/', queue_detail),
