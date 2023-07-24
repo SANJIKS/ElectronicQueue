@@ -93,7 +93,7 @@ class UsersProfileViewSet(viewsets.ViewSet):
     permission_classes = [IsAdmin]
     
     def get_permissions(self):
-        if self.action == 'get':
+        if self.action == 'get' or 'update_profile':
             return [IsAuthenticated()]
         return super().get_permissions()
     
@@ -147,6 +147,20 @@ class UsersProfileViewSet(viewsets.ViewSet):
         profile = Profile.objects.get(pk=pk)
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
+    
+    @swagger_auto_schema(
+    operation_summary="Обновить профиль по id (Для администратора)",
+    operation_description="""
+    Эндпоинт для обновления профиля пользователя по id профиля, необходимо передать id"""
+    )
+    @action(detail=True, methods=['patch'])
+    def update_profile(self, request, pk=None):
+        profile = Profile.objects.get(pk=pk)
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)  # Set partial=True to update a data partially
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminViewSet(viewsets.ViewSet):
