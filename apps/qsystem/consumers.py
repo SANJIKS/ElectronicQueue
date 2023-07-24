@@ -95,13 +95,17 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
 
         async for ticket in tickets:
             window_number = await database_sync_to_async(lambda: ticket.window.number)()
+            window_floor = await database_sync_to_async(lambda: ticket.window.floor.number)()
+            window_cabinet = await database_sync_to_async(lambda: ticket.window.cabinet.number)()
 
             ticket_data = {
                 'id': ticket.id,
                 'ticket_number': ticket.ticket_number,
                 'status': 'started' if ticket.operator_id else 'called',
                 'created_at': ticket.created_at.isoformat(),
-                'window_number': window_number
+                'window_number': window_number,
+                'floor': window_floor,
+                'cabinet': window_cabinet
             }
             ticket_list.append(ticket_data)
 
