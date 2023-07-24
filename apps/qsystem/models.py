@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth import get_user_model
 
 from apps.branches.models import Branch
@@ -21,7 +21,12 @@ class Services(models.Model):
     
     class Meta:
         verbose_name = 'Услуга' 
-        verbose_name_plural = 'Услуги' 
+        verbose_name_plural = 'Услуги'
+
+    def save(self, *args, **kwargs):
+        if Services.objects.count() >= 3:
+            raise IntegrityError("No more than 3 instances allowed")
+        super().save(*args, **kwargs)
 
 
 #Модель Очереди(Услуги)
