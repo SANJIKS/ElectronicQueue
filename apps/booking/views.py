@@ -195,6 +195,34 @@ class BookingViewSet(viewsets.ModelViewSet):
             }
         )
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {'window': self.request.user.window.number}
+ 
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
 
         return Response({'message': 'Талон успешно выдан!', 'customer_id': customer_id, 'redirect_url': redirect_url}, status=200)
     

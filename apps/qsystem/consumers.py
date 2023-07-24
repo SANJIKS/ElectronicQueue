@@ -6,6 +6,7 @@ from asgiref.sync import async_to_sync, sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import (AsyncWebsocketConsumer,
                                         WebsocketConsumer)
+from django.utils import timezone
 
 from .models import Branch, Customer
 
@@ -153,3 +154,84 @@ class ScoreBoardConsumer(AsyncWebsocketConsumer):
     #     ticket_list = await self.get_ticket_list()
 
     #     await self.send_group_ticket_list(ticket_list)
+
+
+class CabinetConsumer(AsyncWebsocketConsumer):
+    def getBranch(self, branch_id):
+        return Branch.objects.get(id=branch_id)
+    
+    async def connect(self):
+        self.branch_id = self.scope['url_route']['kwargs']['branch_id']
+        self.branch = await database_sync_to_async(self.getBranch)(self.branch_id)
+
+        await self.accept()
+
+        await self.channel_layer.group_add(f"cabinet_broadcast", self.channel_name)
+        await self.send_ticket_list('')
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(f"cabinet_broadcast", self.channel_name)
+
+    async def get_cabinets_for_ticket_queue(self, ticket):
+        def get_cabinets_sync(ticket):
+            # Получаем всех операторов для очереди талона.
+            operators = ticket.queue.operator.all()
+
+            cabinets = []
+
+            # Проходимся по каждому оператору.
+            for operator in operators:
+                # Получаем окна, которые обслуживает оператор.
+                operator_window = operator.window
+
+                cabinets.append(operator_window.cabinet)
+            
+            return cabinets
+        
+        cabinets = await sync_to_async(get_cabinets_sync)(ticket)
+
+        return cabinets
+
+    async def get_ticket_cabinet_list(self):
+        tickets = await sync_to_async(self.get_tickets)()
+
+        ticket_cabinet_list = []
+
+        # Проходимся по каждому талону.
+        async for ticket in tickets:
+            # Получаем все кабинеты, связанные с очередью талона.
+            cabinets = await self.get_cabinets_for_ticket_queue(ticket)
+
+            ticket_cabinet_data = {
+                'id': ticket.id,
+                'ticket_number': ticket.ticket_number,
+                'created_at': ticket.created_at.isoformat(),
+                'cabinets': [cabinet.number for cabinet in cabinets]
+            }
+            ticket_cabinet_list.append(ticket_cabinet_data)
+
+        return ticket_cabinet_list
+
+    def get_tickets(self):
+        return Customer.objects.filter(
+            created_at__date=timezone.localdate(), 
+            is_served=None, 
+            queue__branch=self.branch_id,
+            window=None,
+            operator=None
+        )
+
+    async def send_ticket_list(self, event):
+        ticket_cabinet_list = await self.get_ticket_cabinet_list()
+        await self.send(text_data=json.dumps({
+            'action': 'ticket_cabinet_list_updated',
+            'ticket_cabinet_data': ticket_cabinet_list,
+        }))
+
+    # Обработка входящих сообщений
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        action = text_data_json.get('action', '')
+
+        if action == 'get_ticket_cabinet_list':
+            await self.send_ticket_cabinet_list('')

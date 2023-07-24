@@ -152,6 +152,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
             }
         )
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         action = Customer.objects.get(pk=customer_id)
         CustomerAction.objects.create(customer=action, action='created', event=f'Создан талон {action.ticket_number}')
 

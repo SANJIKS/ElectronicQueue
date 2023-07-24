@@ -85,6 +85,15 @@ class OperatorViewSet(viewsets.ViewSet):
             }
         )
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         return Response({'message': f'{customer.ticket_number}, подойдите пожалуйста к {self.request.user.window.number} окну'}, status=200)
 
     @swagger_auto_schema(
@@ -133,6 +142,15 @@ class OperatorViewSet(viewsets.ViewSet):
                 "type": "send_ticket_list",
                 "event": {}
  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
             }
         )
 
@@ -186,6 +204,15 @@ class OperatorViewSet(viewsets.ViewSet):
                 "type": "send_ticket_list",
                 "event": {'window': self.request.user.window.number}
  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
             }
         )
 
@@ -256,6 +283,34 @@ class OperatorViewSet(viewsets.ViewSet):
             }
         )
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {'window': self.request.user.window.number}
+ 
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         return Response({'message': 'Талон успешно перенесен на другую очередь.'})
     
 
@@ -287,6 +342,34 @@ class OperatorViewSet(viewsets.ViewSet):
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {'window': self.request.user.window.number}
+ 
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
             {
                 "type": "send_ticket_list",
                 "event": {},  
@@ -340,6 +423,34 @@ class OperatorViewSet(viewsets.ViewSet):
             }
         )
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {'window': self.request.user.window.number}
+ 
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
         return Response({'message': 'Талон обслужен и среднее время обновлено'})
     
     @swagger_auto_schema(
@@ -376,6 +487,34 @@ class OperatorViewSet(viewsets.ViewSet):
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "ticket_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {},  
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "score_broadcast",
+            {
+                "type": "send_ticket_list",
+                "event": {'window': self.request.user.window.number}
+ 
+            }
+        )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "cabinet_broadcast",
             {
                 "type": "send_ticket_list",
                 "event": {},  
