@@ -14,6 +14,8 @@ media
 anon copy.sessions
 anon.session
 audios/
+audios/voice.ogg
+anon copy.session
 anon
 
 # If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/
