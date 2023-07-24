@@ -28,6 +28,14 @@ class QueueViewSet(viewsets.ModelViewSet):
             return [IsAdmin(),IsAdminOfHisBranch()]
         else:
             return [IsAdmin()]
+        
+    @swagger_auto_schema(
+        operation_summary='Получить все очереди(услуги)',
+        operation_description="""
+        Эндпоинт для получения всех"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_summary='Создать очередь (Для администратора)',
@@ -149,6 +157,13 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         return response
     
+    @swagger_auto_schema(
+        operation_summary='Получить все талоны',
+        operation_description="""
+        Эндпоинт для получения всех талонов"""
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_summary='Получить талон по id',
