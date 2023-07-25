@@ -152,6 +152,7 @@ data/
 nginx/
 static/
 code/
+db_data/
 
 backups/
 reports/
