@@ -1,6 +1,6 @@
 import datetime
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from io import BytesIO
 
 import matplotlib.pyplot as plt
@@ -166,8 +166,8 @@ class OperatorStatisticReportPDFViewSet(ViewSet):
         except ValueError:
             return Response({'error': 'Invalid year format'}, status=status.HTTP_400_BAD_REQUEST)
         
-        start_date = datetime.date(year, 1, 1)
-        end_date = start_date + relativedelta(years=1) - datetime.timedelta(days=1)
+        start_date = date(year, 1, 1)
+        end_date = start_date + relativedelta(years=1) - timedelta(days=1)
 
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=operator_year_report_{operator.username}_{year}.pdf'
@@ -185,8 +185,8 @@ class OperatorStatisticReportPDFViewSet(ViewSet):
             average_time = [0] * 12
 
             for month in range(1, 13):
-                month_start = datetime.date(year, month, 1)
-                month_end = month_start + relativedelta(months=1) - datetime.timedelta(days=1)
+                month_start = date(year, month, 1)
+                month_end = month_start + relativedelta(months=1) - timedelta(days=1)
                 reports = OperatorDailyReport.objects.filter(operator=operator, date__range=(month_start, month_end))
 
                 if reports.exists():
