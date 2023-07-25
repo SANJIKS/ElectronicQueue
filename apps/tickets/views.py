@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from apps.branches.serializers import WindowSerializer
 
 
 from apps.report_apps.operator_reports.models import OperatorAction
@@ -19,7 +20,7 @@ from apps.booking.serializers import BookingSerializer
 from apps.branches.models import Branch, Window
 from apps.qsystem.models import Customer, Waiting_List
 from apps.qsystem.serializers import (CustomerSerializer,
-                                      GetQueueCustomersSerializer,
+                                      GetQueueCustomersSerializer, QueueSerializer,
                                       WaitingListSerializer)
 
 from .permissions import IsOperatorOffline, IsOperatorOfCustomer, OperatorIsNotBusy, IsRegistrator, IsOperator
@@ -525,6 +526,28 @@ class OperatorViewSet(viewsets.ViewSet):
 
 
 class OperatorGetViewSet(viewsets.ViewSet):
+    @swagger_auto_schema(
+        operation_summary="Получить список очередей, которые может обслуживать оператор.",
+        operation_description="Эндпоинт для получения списка очередей, которые может обслуживать оператор. Пользователь, который отправляет запрос, должен быть оператором.",
+    )
+    @action(detail=False, methods=['get'])
+    def get_operator_queues(self, request):
+        queues = self.request.user.queues.all()
+        serializer = QueueSerializer(queues, many=True)
+        return Response(serializer.data, status=200)
+
+    @swagger_auto_schema(
+        operation_summary="Получить окно, которое обслуживает оператор.",
+        operation_description="Эндпоинт для получения окна, которое обслуживает оператор. Пользователь, который отправляет запрос, должен быть оператором.",
+    )
+    @action(detail=False, methods=['get'])
+    def get_operator_window(self, request):
+        window = self.request.user.window
+        if not window:
+            return Response({'error': 'Оператор не привязан к окну'}, status=404)
+        serializer = WindowSerializer(window)
+        return Response(serializer.data, status=200)
+    
     @swagger_auto_schema(
         operation_summary="Получить список ожидающих талонов.",
         operation_description="Эндпоинт для получения списка талонов которые необходимо обслужить оператору. Возвращается список талонов отфильтрованных по дате, очереди которые обслуживает данный оператор, не обслужены, и те которые не были перенесены на другое окно. Отсортированы по позиции. Пользователь который отправляет запрос должен быть оператором.",
