@@ -307,7 +307,7 @@ class TCPConfigView(APIView):
 
 
 class BackupViewSet(viewsets.ViewSet):
-    permission_classes = [IsAdmin]
+#    permission_classes = [IsAdmin]
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
