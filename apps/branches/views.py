@@ -87,6 +87,19 @@ class BoardViewSet(ModelViewSet):
         serializer = AdSerializer(ads, many=True)
         return Response(serializer.data)
     
+
+    @swagger_auto_schema(
+    operation_summary='Получить все окна-табло по id филиала',
+    operation_description="""
+    Эндпоинт для получения всех окон-табло, пренадлежащих данному филиалу, необходимо передать id филиала"""
+    )
+    @action(detail=True, methods=['GET'])
+    def boards(self, request, pk=None):
+        billboards = Board.objects.filter(branch=pk)
+        serializer = BoardSerializer(billboards, many=True)
+        return Response(serializer.data)
+
+    
     @swagger_auto_schema(
         operation_summary='Получить все табло',
         operation_description="""
