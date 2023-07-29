@@ -428,10 +428,10 @@ class ProtocolView(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def get_operator_actions(self, request):
         admin = self.request.user
-        branch = Branch.objects.get(admin=admin)
+        branches = Branch.objects.filter(admin=admin)
         today = datetime.now().astimezone(timez('Asia/Bishkek'))
 
-        actions = set(OperatorAction.objects.filter(operator__queues__branch=branch, created_at__date=today))
+        actions = OperatorAction.objects.filter(operator__queues__branch__in=branches, created_at__date=today)
         serializer = OperatorActionSerializer(actions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -443,9 +443,9 @@ class ProtocolView(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def get_customer_actions(self, request):
         admin = self.request.user
-        branch = Branch.objects.get(admin=admin)
+        branches = Branch.objects.filter(admin=admin)
         today = datetime.now().astimezone(timez('Asia/Bishkek'))
 
-        actions = set(CustomerAction.objects.filter(customer__queue__branch=branch, created_at__date=today))
+        actions = CustomerAction.objects.filter(customer__queue__branch__in=branches, created_at__date=today)
         serializer = CustomerActionSerializer(actions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
