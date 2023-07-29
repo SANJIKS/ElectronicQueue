@@ -21,9 +21,10 @@ from decouple import config
 
 from apps.admins.permissions import IsAdmin
 from apps.qsystem.models import Queue
+from apps.qsystem.serializers import QueueSerializer
 from apps.users.models import Profile
 from apps.users.serializers import ProfileSerializer
-from apps.branches.models import Branch
+from apps.branches.models import Branch, Window
 
 from apps.report_apps.operator_reports.models import OperatorAction
 from apps.report_apps.customer_reports.models import CustomerAction
@@ -214,6 +215,35 @@ class AdminViewSet(viewsets.ViewSet):
         queue.is_blocked = True
         queue.save()
         return Response({'message': 'Очередь заблокирована'}, status=200)
+    
+
+    @swagger_auto_schema(
+        operation_summary="Получить все очереди филиала, которым управляет админ",
+        operation_description="""
+        Эндпоинт для получения всех очередей филиала, которым управляет админ"""
+        )
+    @action(detail=False, methods=['get'])
+    def get_admin_queues(self, request, *args, **kwargs):
+        admin = self.request.user
+        admin_branches = Branch.objects.filter(admin=admin)
+        queues = Queue.objects.filter(branch__in=admin_branches)
+        serializer = QueueSerializer(queues, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    @swagger_auto_schema(
+        operation_summary="Получить всех операторов филиала, которым управляет админ",
+        operation_description="""
+        Эндпоинт для получения всех операторов филиала, которым управляет админ"""
+        )
+    @action(detail=False, methods=['get'])
+    def get_admin_branch_operators(self, request, *args, **kwargs):
+        admin = self.request.user
+        admin_branches = Branch.objects.filter(admin=admin)
+        windows = Window.objects.filter(branch__in=admin_branches)
+        operators = User.objects.filter(window__in=windows)
+        serializer = UserSerializer(operators, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
     @swagger_auto_schema(

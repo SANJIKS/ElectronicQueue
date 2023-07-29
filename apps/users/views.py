@@ -1,10 +1,8 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from apps.admins.permissions import IsAdmin
 from djoser.views import UserViewSet as DjoserViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from django.contrib.auth import get_user_model
@@ -21,7 +19,7 @@ from .serializers import ProfileSerializer
 
 
 class ProfileView(viewsets.ViewSet):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_summary="Получить профиль пользователя",
