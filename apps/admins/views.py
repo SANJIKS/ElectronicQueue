@@ -299,13 +299,13 @@ class AdminViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         operation_summary="Получить список онлайн операторов (Для администратора)",
         operation_description="""
-        Эндпоинт для получения операторов которые в данный момент работают"""
+        Эндпоинт для получения операторов, которые в данный момент работают"""
             )
     @action(detail=False, methods=['get'])
     def get_online_operators(self, request, *args, **kwargs):
         admin = self.request.user
-        branch = Branch.objects.get(admin=admin)
-        operators = User.objects.filter(profile__position='operator', queues__branch=branch, window__is_online=True)
+        branches = Branch.objects.filter(admin=admin)
+        operators = User.objects.filter(profile__position='operator', window__branch__in=branches, window__is_online=True)
 
         serializer = GetOnlineWindows(operators, many=True)
         return Response(serializer.data, status=200)
