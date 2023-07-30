@@ -711,11 +711,26 @@ class RegistratorViewSet(viewsets.ViewSet):
         serializer = BookingSerializer(bookings, many=True)
         return Response(serializer.data)
 
-    
+    query_params = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name of the customer'),
+        'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name of the customer'),
+        'surname': openapi.Schema(type=openapi.TYPE_STRING, description='Surname of the customer'),
+        'phone': openapi.Schema(type=openapi.TYPE_STRING, description='Phone number of the customer'),
+        'pasport': openapi.Schema(type=openapi.TYPE_STRING, description='Passport number of the customer'),
+        'status': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Served status of the customer'),
+        'service': openapi.Schema(type=openapi.TYPE_STRING, description='Service name'),
+        'number': openapi.Schema(type=openapi.TYPE_STRING, description='Ticket number of the customer'),
+    },
+    required=['first_name', 'last_name'],
+    )
+
     @swagger_auto_schema(
-        operation_summary="Поиск талона по различным реквизитам.",
-        operation_description="""
-        Эндпоинт для поиска талона по различным реквизитам таким как ФИО, номер телефона, паспорт. Поиск будут идти по тем реквизитам, которые были переданы. Пользователь который отправляет запрос должен быть регистратором."""
+    operation_summary="Поиск талона по различным реквизитам.",
+    operation_description="""
+    Эндпоинт для поиска талона по различным реквизитам таким как ФИО, номер телефона, паспорт. Поиск будут идти по тем реквизитам, которые были переданы. Пользователь который отправляет запрос должен быть регистратором.""",
+    request_body=query_params
     )
     @action(detail=False, methods=['post'])
     def customer_by_props(self, request):
@@ -730,6 +745,12 @@ class RegistratorViewSet(viewsets.ViewSet):
             filters['phone_number'] = request.data['phone']
         if 'pasport' in request.data and request.data['pasport'] != "":
             filters['pasport'] = request.data['pasport']
+        if 'status' in request.data and request.data['status'] != "":
+            filters['is_served'] = request.data['status']
+        if 'service' in request.data and request.data['service'] != "":
+            filters['queue__services__name'] = request.data['service']
+        if 'number' in request.data and request.data['number'] != "":
+            filters['ticket_number'] = request.data['number']
         
         customers = Customer.objects.filter(**filters)
         serializer = CustomerSerializer(customers, many=True)
@@ -740,7 +761,7 @@ class RegistratorViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         operation_summary="Поиск предварительной записи по различным реквизитам",
         operation_description="""
-        Эндпоинт для поиска пред. записей по реквизитам которые были переданы в запрос, таким как ФИО, номер телефона, паспорт. Пользователь который отправляет запрос должен быть регистратором."""
+        Эндпоинт для поиска пред. записей по реквизитам которые были переданы в запрос, таким как ФИО, номер телефона, паспорт, номер талона, тип услуги, статус обслуживания. Пользователь который отправляет запрос должен быть регистратором."""
     )
     @action(detail=False, methods=['post'])
     def get_bookings_by_props(self, request):
