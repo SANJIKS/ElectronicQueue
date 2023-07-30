@@ -532,7 +532,19 @@ class BranchViewSet(ModelViewSet):
         else:
             return [AllowAny()]
     
-    
+    @swagger_auto_schema(
+        operation_summary='Получить все окна филиала',
+        operation_description="""
+        Эндпоинт для получения всех окон в данном филиале.
+        Необходимо передать id филиала"""
+    )
+    @action(detail=True, methods=['get'])
+    def get_branch_windows(self, request, pk=None):
+        branch = Branch.objects.get(pk=pk)
+        windows = Window.objects.filter(branch=branch)
+        serializer = WindowSerializer(windows, many=True)
+        return Response(serializer.data, status=200)
+
     @swagger_auto_schema(
         operation_summary='Получить типы услуг доступных в филиале',
         operation_description="""
