@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'channels',
 
     #my apps
+    'apps.chat',
     'apps.qsystem',
     'apps.branches',
     'apps.users',
