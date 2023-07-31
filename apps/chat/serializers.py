@@ -1,16 +1,8 @@
 from rest_framework import serializers
-from .models import ChatGroup, Message, PrivateChat, PrivateMessage
+from django.contrib.auth import get_user_model
+from .models import PrivateChat, PrivateMessage
 
-class ChatGroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChatGroup
-        fields = ['id', 'branch', 'members']
-
-class MessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Message
-        fields = ['id', 'chat_group', 'sender', 'content', 'timestamp']
-        read_only_fields = ('id', 'chat_group', 'sender', 'timestamp')
+User = get_user_model()
 
 class PrivateChatSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,7 +10,13 @@ class PrivateChatSerializer(serializers.ModelSerializer):
         fields = ['id', 'user1', 'user2']
 
 class PrivateMessageSerializer(serializers.ModelSerializer):
+    private_chat_id = serializers.PrimaryKeyRelatedField(source='private_chat', queryset=PrivateChat.objects.all())
+    sender = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    
     class Meta:
         model = PrivateMessage
-        fields = ['id', 'private_chat', 'sender', 'content', 'timestamp']
-        read_only_fields = ('id', 'private_chat', 'chat_group', 'sender', 'timestamp')
+        fields = ['id', 'content', 'timestamp', 'private_chat_id', 'sender']
+
+    def create(self, validated_data):
+        private_message = PrivateMessage.objects.create(**validated_data)
+        return private_message

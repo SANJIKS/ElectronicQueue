@@ -1,7 +1,11 @@
-from django.urls import path
-from .views import PrivateChatView, PrivateMessageView
+from rest_framework.routers import DefaultRouter
+from django.urls import path, include
+from .views import PrivateChatViewSet, PrivateMessageViewSet
+
+router = DefaultRouter()
+router.register(r'private_chat', PrivateChatViewSet, basename='private_chat')
+router.register(r'private_message', PrivateMessageViewSet, basename='private_message')
 
 urlpatterns = [
-    path('private_chat/', PrivateChatView.as_view(), name='private_chat'),
-    path('private_message/<int:private_chat_id>/', PrivateMessageView.as_view(), name='private_message'),
+    path('', include(router.urls)),
 ]
