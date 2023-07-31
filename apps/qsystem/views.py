@@ -290,8 +290,8 @@ from telethon.sync import TelegramClient
 from telethon.errors import FloodWaitError
 
 
-api_id = '27753929'
-api_hash = '173a1ce571f37b534cc342aeea0514c1'
+api_id = '28380656'
+api_hash = 'ec44d168a699b9f1b61dc58a5830ceff'
 bot_username = 'https://t.me/steosvoice_bot' 
 
 os.makedirs('audios', exist_ok=True)
@@ -353,12 +353,12 @@ class ChatViewSet(viewsets.ViewSet):
         operation_summary="Имитация работы веб-сокетов в рабочем чате",
         operation_description="Возвращает пример листа с сообщениями."
     )
-    @action(detail=False, methods=['get'], url_path='ws/chat/(?P<user_id>\d+)/(?P<client_id>\d+)')
+    @action(detail=False, methods=['get'], url_path='ws/private_chat/(?P<user_id>\d+)/(?P<client_id>\d+)')
     def imitate_ws_chat(self, request, user_id=None, client_id=None):
         example_data = [
-            {'message': 'Hello!', 'user_id': 1},
-            {'message': 'Hi, how are you?', 'user_id': 2},
-            {'message': 'I am fine, thank you!', 'user_id': 1},
+            {"message": {"id": 18, "private_chat": 3, "sender": 1, "content": "Goddamn your voice is like nails on a chalkboard", "timestamp": "2023-07-31T20:09:36.009217+06:00"}},
+            {"message": {"id": 19, "private_chat": 3, "sender": 2, "content": "It will be the last thing your hear", "timestamp": "2023-07-31T20:09:36.009217+06:00"}},
+            {"message": {"id": 20, "private_chat": 3, "sender": 1, "content": "O, hell no..", "timestamp": "2023-07-31T20:09:36.009217+06:00"}}
         ]
         return Response(example_data)
 

@@ -1,78 +1,23 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import ChatGroup, Message, PrivateMessage, PrivateChat
+from django.db.models import Q
+from .models import PrivateMessage, PrivateChat
 import json
-from asgiref.sync import sync_to_async
-
-class GroupChatConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['chat_group_id']
-        self.room_group_name = f'chat_group_{self.room_name}'
-
-        # Join chat room
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-
-        await self.accept()
-
-        # Send chat history
-        messages = await self.get_chat_history(self.room_name)
-        for message in messages:
-            await self.send(text_data=json.dumps({
-                'message': message.content,
-                'sender': message.sender.username,
-                'timestamp': str(message.timestamp)
-            }))
-
-    async def disconnect(self, close_code):
-        # Leave chat room
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-
-    # Receive message from WebSocket
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-
-        # Send message to chat room group
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message
-            }
-        )
-
-    # Receive message from room group
-    async def chat_message(self, event):
-        message = event['message']
-
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps({
-            'message': message
-        }))
-
-    @sync_to_async
-    def get_chat_history(self, chat_group_id):
-        chat_group = ChatGroup.objects.get(id=chat_group_id)
-        return list(Message.objects.select_related('sender').filter(chat_group=chat_group).order_by('timestamp'))
-
-
 
 class PrivateChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['private_chat_id']
-        self.room_group_name = f'private_chat_{self.room_name}'
+        self.user_id_1 = self.scope['url_route']['kwargs']['user_id_1']
+        self.user_id_2 = self.scope['url_route']['kwargs']['user_id_2']
+
+        self.room_group_name = f'private_chat_{self.user_id_1}_{self.user_id_2}'
 
         # Join chat room
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
+
+        await self.accept()  # Accept the connection before sending any messages
 
         # Send the chat history
         messages = await self.get_chat_history()
@@ -82,8 +27,6 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
                 'sender': message['sender'],
                 'timestamp': message['timestamp'].isoformat()
             }))
-
-        await self.accept()
 
     async def disconnect(self, close_code):
         # Leave chat room
@@ -117,7 +60,19 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_chat_history(self):
+        # Find the chat where both users are participants
+        chat = PrivateChat.objects.filter(
+            Q(user1_id=self.user_id_1, user2_id=self.user_id_2) |
+            Q(user1_id=self.user_id_2, user2_id=self.user_id_1)
+        ).distinct()
+
+        if not chat.exists():
+            return []
+
+        # Get the messages of the chat
         messages = PrivateMessage.objects.filter(
-            private_chat_id=self.room_name
-        ).order_by('timestamp').values('content', 'sender__username', 'timestamp')
+            private_chat=chat.first()
+        ).order_by('timestamp').values('content', 'sender', 'timestamp')
+        print(messages)
+
         return list(messages)
