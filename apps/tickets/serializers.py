@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from apps.users.serializers import ProfileSerializer
 
 User = get_user_model()
 
@@ -58,3 +59,11 @@ class GetWindowsSerializer(serializers.ModelSerializer):
         
         representation['operator'] = f"{operator.profile.first_name} {operator.profile.last_name}"
         return representation
+    
+
+class UserSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer() # Assuming the related name is 'profile'
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'profile', ) 

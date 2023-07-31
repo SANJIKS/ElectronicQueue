@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from pytz import timezone as timez
@@ -25,11 +26,12 @@ from apps.qsystem.serializers import (CustomerSerializer,
 
 from .permissions import IsOperatorOffline, IsOperatorOfCustomer, OperatorIsNotBusy, IsRegistrator, IsOperator
 from .serializers import (ChangeNotes, GetByProps, GetServedCustomers,
-                          GetWindowsSerializer)
+                          GetWindowsSerializer, UserSerializer)
 from .tasks import calculate_average_waiting_time, cancel_ticket, shift_positions
 
 today = datetime.now().astimezone(timez('Asia/Bishkek'))
 
+User = get_user_model()
 
 class OperatorViewSet(viewsets.ViewSet):
     def get_permissions(self):
@@ -676,6 +678,21 @@ class OperatorGetViewSet(viewsets.ViewSet):
         customers = Customer.objects.filter(operator=operator, is_served=True)
         serializer = GetServedCustomers(customers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
+    @swagger_auto_schema(
+    operation_summary="Получить работающих пользователей филиала",
+    operation_description="Получить список пользователей которые работают в том же филиале что и оператор."
+    )
+    @action(detail=False, methods=['get'])
+    def get_branch_users(self, request):
+        branch = self.request.user.window.branch
+        admins = User.objects.filter(branches=branch)
+        operators = User.objects.filter(window__branch=branch)
+        branch_users = admins.union(operators)
+        
+        serializer = UserSerializer(branch_users, many=True) 
+        return Response(serializer.data)
 
 
 class RegistratorViewSet(viewsets.ViewSet):
