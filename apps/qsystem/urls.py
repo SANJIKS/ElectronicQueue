@@ -5,8 +5,8 @@ from .views import QueueViewSet, CustomerViewSet, PrintingView, voice_bot, ChatV
 router = routers.DefaultRouter()
 router.register('', ChatViewSet, basename='websockets')
 # router.register(r'queues', QueueViewSet, basename='queue')
-router.register(r'customers/', CustomerViewSet, basename='customer')
-router.register(r'customers/printing/', PrintingView, basename='printing')
+router.register(r'customers', CustomerViewSet, basename='customer')
+router.register(r'customers/printing', PrintingView, basename='printing')
 
 queue_list = QueueViewSet.as_view({
     'get': 'list',

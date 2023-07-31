@@ -24,6 +24,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
+    path('chat/', include('apps.chat.urls')),
     # path('user/', include('djoser.urls')),
     # path('login/', include('djoser.urls.jwt')),
     path('', include('apps.users.urls')),
@@ -34,7 +35,6 @@ urlpatterns = [
     path('', include('apps.branches.urls')),
     path('booking/', include('apps.booking.urls')),
     path('admins/', include('apps.admins.urls')),
-    # path('reports/', include('apps.reports.urls')),
     path('reports/', include('apps.report_apps.operator_reports.urls')),
     path('reports/', include('apps.report_apps.customer_reports.urls')),
 ]
