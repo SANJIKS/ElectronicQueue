@@ -73,6 +73,5 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
         messages = PrivateMessage.objects.filter(
             private_chat=chat.first()
         ).order_by('timestamp').values('content', 'sender', 'timestamp')
-        print(messages)
 
         return list(messages)
