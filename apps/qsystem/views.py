@@ -358,7 +358,7 @@ class ChatViewSet(viewsets.ViewSet):
         example_data = [
             {"message": {"id": 18, "private_chat": 3, "sender": 1, "content": "Goddamn your voice is like nails on a chalkboard", "timestamp": "2023-07-31T20:09:36.009217+06:00"}},
             {"message": {"id": 19, "private_chat": 3, "sender": 2, "content": "It will be the last thing your hear", "timestamp": "2023-07-31T20:09:36.009217+06:00"}},
-            {"message": {"id": 20, "private_chat": 3, "sender": 1, "content": "O, hell no..", "timestamp": "2023-07-31T20:09:36.009217+06:00"}}
+            {"message": {"id": 20, "private_chat": 3, "sender": 1, "content": "O, hell no..", "timestamp": "2023-07-31T20:09:36.009217+06:00"}}]
         return Response(example_data)
 
     @swagger_auto_schema(
