@@ -290,8 +290,8 @@ from telethon.sync import TelegramClient
 from telethon.errors import FloodWaitError
 
 
-api_id = '28380656'
-api_hash = 'ec44d168a699b9f1b61dc58a5830ceff'
+api_id = '27753929'
+api_hash = '173a1ce571f37b534cc342aeea0514c1'
 bot_username = 'https://t.me/steosvoice_bot' 
 
 os.makedirs('audios', exist_ok=True)
@@ -340,3 +340,102 @@ def voice_bot(request):
             return Response({"error": "No valid audio file was generated"}, status=500)
     else:
         return Response({"error": "No audio received"}, status=400)
+    
+
+
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import viewsets
+from drf_yasg.utils import swagger_auto_schema
+
+class ChatViewSet(viewsets.ViewSet):
+    @swagger_auto_schema(
+        operation_summary="Имитация работы веб-сокетов в рабочем чате",
+        operation_description="Возвращает пример листа с сообщениями."
+    )
+    @action(detail=False, methods=['get'], url_path='ws/chat/(?P<user_id>\d+)/(?P<client_id>\d+)')
+    def imitate_ws_chat(self, request, user_id=None, client_id=None):
+        example_data = [
+            {'message': 'Hello!', 'user_id': 1},
+            {'message': 'Hi, how are you?', 'user_id': 2},
+            {'message': 'I am fine, thank you!', 'user_id': 1},
+        ]
+        return Response(example_data)
+
+    @swagger_auto_schema(
+        operation_summary="Имитация работы TicketConsumer",
+        operation_description="Возвращает пример листа с тикетами."
+    )
+    @action(detail=False, methods=['get'], url_path='ws/customers/(?P<user_id>\d+)')
+    def imitate_ticket_consumer(self, request, user_id=None):
+        ticket_data = [
+            {
+                'id': 1,
+                'ticket_number': 'A01',
+                'position': 1,
+                'created_at': '2023-07-31T09:30:00',
+                'queue': 1,
+                'category': 'veteran',
+            },
+            {
+                'id': 2,
+                'ticket_number': 'A02',
+                'position': 2,
+                'created_at': '2023-07-31T10:00:00',
+                'queue': 1,
+                'category': 'regular',
+            },
+        ]
+        return Response(ticket_data)
+    
+    @swagger_auto_schema(
+        operation_summary="Имитация работы ScoreBoardConsumer",
+        operation_description="Возвращает пример листа с информацией ScoreBoard."
+    )
+    @action(detail=False, methods=['get'], url_path='ws/board/(?P<branch_id>\w+)')
+    def imitate_scoreboard_consumer(self, request, branch_id=None):
+        # Example data imitating ScoreBoardConsumer
+        scoreboard_data = [
+            {
+                'id': 1,
+                'ticket_number': 'A01',
+                'status': 'called',
+                'created_at': '2023-07-31T09:30:00',
+                'window_number': 1,
+                'floor': 1,
+                'cabinet': 1,
+            },
+            {
+                'id': 2,
+                'ticket_number': 'A02',
+                'status': 'started',
+                'created_at': '2023-07-31T010:30:00',
+                'window_number': 2,
+                'floor': 1,
+                'cabinet': 2,
+            },
+        ]
+        return Response(scoreboard_data)
+
+    @swagger_auto_schema(
+        operation_summary="Имитация работы CabinetConsumer",
+        operation_description="Возвращает пример листа с информацией Cabinet."
+    )
+    @action(detail=False, methods=['get'], url_path='ws/waitlist/(?P<branch_id>\w+)')
+    def imitate_cabinet_consumer(self, request, branch_id=None):
+        cabinet_data = [
+            {
+                'id': 1,
+                'ticket_number': 'A01',
+                'created_at': '2023-07-31T09:30:00',
+                'cabinets': [1, 2, 3],
+            },
+            {
+                'id': 2,
+                'ticket_number': 'A02',
+                'created_at': '2023-07-31T09:50:00',
+                'cabinets': [2, 3],
+            },
+
+        ]
+        return Response(cabinet_data)
