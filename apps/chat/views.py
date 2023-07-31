@@ -20,7 +20,7 @@ class PrivateChatViewSet(viewsets.ViewSet):
         )
     @action(detail=False, methods=['get'])
     def get_chats(self, request):
-        return Response(PrivateChatSerializer(PrivateChat.objects.all()).data)
+        return Response(PrivateChatSerializer(PrivateChat.objects.all(), many=True).data)
     
     @swagger_auto_schema(
         request_body=openapi.Schema(
