@@ -1,7 +1,7 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from drf_yasg.utils import swagger_auto_schema
 from djoser.views import UserViewSet as DjoserViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
@@ -19,7 +19,6 @@ from .serializers import ProfileSerializer
 
 
 class ProfileView(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_summary="Получить профиль пользователя",
