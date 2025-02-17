@@ -290,9 +290,9 @@ from telethon.sync import TelegramClient
 from telethon.errors import FloodWaitError
 
 
-api_id = '27753929'
-api_hash = '173a1ce571f37b534cc342aeea0514c1'
-bot_username = 'https://t.me/steosvoice_bot' 
+api_id = config('API_ID')
+api_hash = config('API_HASH')
+bot_username = config('BOT_USERNAME')
 
 os.makedirs('audios', exist_ok=True)
 
